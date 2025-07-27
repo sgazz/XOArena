@@ -106,21 +106,84 @@ private struct GameHeader: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var isHighContrast = false
+    @State private var showingPauseMenu = false
     
     var body: some View {
-        VStack(spacing: 12) {
-            // Title
-            Text("XO ARENA")
-                .font(.system(size: titleFontSize, weight: .black, design: .rounded))
-                .goldText()
-                .glow(color: Color.adaptiveGold(isHighContrast: isHighContrast), radius: 15)
-                .accessibilityLabel("XO Arena Title")
-            
-            // Score display
-            HStack(spacing: 20) {
+        VStack(spacing: 8) {
+            // Header with controls and scores
+            HStack(spacing: 16) {
+                // Pause button
+                Button("Pause") {
+                    HapticManager.shared.impact(.medium)
+                    gameViewModel.pauseGame()
+                    showingPauseMenu = true
+                }
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(.xoTextMuted)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.xoDarkMetallic.opacity(0.3))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(Color.xoTextMuted.opacity(0.2), lineWidth: 1)
+                        )
+                )
+                .hoverEffect()
+                .accessibilityLabel("Pause Game")
+                .accessibilityHint("Pause the current game")
+                
+                // Separator
+                Rectangle()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.clear, Color.xoTextMuted.opacity(0.4), Color.clear],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .frame(width: 1, height: 32)
+                
+                // Player X Score
                 ScoreDisplay(player: .x, score: gameViewModel.xScore, isLeading: gameViewModel.xScore > gameViewModel.oScore)
+                
+                // Player O Score
                 ScoreDisplay(player: .o, score: gameViewModel.oScore, isLeading: gameViewModel.oScore > gameViewModel.xScore)
+                
+                // Separator
+                Rectangle()
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.clear, Color.xoTextMuted.opacity(0.4), Color.clear],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .frame(width: 1, height: 32)
+                
+                // Reset button
+                Button("Reset") {
+                    HapticManager.shared.impact(.medium)
+                    gameViewModel.resetGame()
+                }
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(.xoTextMuted)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.xoDarkMetallic.opacity(0.3))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(Color.xoTextMuted.opacity(0.2), lineWidth: 1)
+                        )
+                )
+                .hoverEffect()
+                .accessibilityLabel("Reset Game")
+                .accessibilityHint("Start a new game")
             }
+            .frame(maxWidth: .infinity)
             .animation(.spring(response: 0.6, dampingFraction: 0.7), value: gameViewModel.xScore)
             .animation(.spring(response: 0.6, dampingFraction: 0.7), value: gameViewModel.oScore)
             
@@ -142,64 +205,42 @@ private struct GameHeader: View {
                     gameMode: gameViewModel.gameMode,
                     timeRemaining: gameViewModel.gameMode == .timed ? gameViewModel.timeRemaining : nil
                 )
-            } else {
-                // Current player indicator
-                CurrentPlayerIndicator(gameViewModel: gameViewModel)
-                    .animation(.spring(response: 0.5, dampingFraction: 0.6), value: gameViewModel.currentPlayer)
             }
         }
         .padding(.horizontal, headerHorizontalPadding)
         .padding(.top, headerTopPadding)
+        .sheet(isPresented: $showingPauseMenu) {
+            PauseMenuView(gameViewModel: gameViewModel)
+        }
     }
     
     private var headerHorizontalPadding: CGFloat {
         switch horizontalSizeClass {
         case .regular:
-            return 40
-        case .compact:
             return 20
+        case .compact:
+            return 12
         case .none:
-            return 25
+            return 16
         @unknown default:
-            return 25
+            return 16
         }
     }
     
     private var headerTopPadding: CGFloat {
         switch verticalSizeClass {
         case .regular:
-            return 16
+            return 6
         case .compact:
-            return 8
+            return 3
         case .none:
-            return 12
+            return 4
         @unknown default:
-            return 12
+            return 4
         }
     }
     
-    private var titleFontSize: CGFloat {
-        let baseSize: CGFloat = horizontalSizeClass == .regular ? 32 : 28
-        
-        switch dynamicTypeSize {
-        case .xSmall, .small:
-            return baseSize
-        case .medium:
-            return baseSize * 0.95
-        case .large:
-            return baseSize * 0.9
-        case .xLarge:
-            return baseSize * 0.85
-        case .xxLarge:
-            return baseSize * 0.8
-        case .xxxLarge:
-            return baseSize * 0.75
-        case .accessibility1, .accessibility2, .accessibility3, .accessibility4, .accessibility5:
-            return baseSize * 0.7
-        @unknown default:
-            return baseSize * 0.95
-        }
-    }
+
 }
 
 // MARK: - Game Content
@@ -217,71 +258,54 @@ private struct GameContent: View {
             let availableHeight = geometry.size.height - (verticalPadding * 2)
             
             // Calculate optimal board size and spacing
-            let optimalBoardSize = min(availableWidth / 4, availableHeight / 2) // Show 4 boards per row
+            let optimalBoardSize = min(availableWidth / 2, availableHeight / 4) // Show 2 boards per row
             let actualBoardSize = min(optimalBoardSize, boardSize)
-            let actualSpacing = min(boardSpacing, (availableWidth - (actualBoardSize * 4)) / 3)
+            let actualSpacing = min(boardSpacing, max(6, (availableWidth - (actualBoardSize * 2)) / 1))
             
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: actualSpacing), count: 4), spacing: 16) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: actualSpacing), count: 2), spacing: 8) {
                 ForEach(0..<gameViewModel.boards.count, id: \.self) { index in
-                    VStack(spacing: 8) {
-                        // Board indicator
+                    VStack(spacing: 4) {
+                        // Simple board indicator
                         Text("BOARD \(index + 1)")
                             .font(.system(size: boardLabelFontSize, weight: .bold))
                             .foregroundColor(gameViewModel.boards[safe: index]?.isActive == true ? Color.adaptiveGold(isHighContrast: isHighContrast) : .xoTextMuted)
-                            .glow(color: gameViewModel.boards[safe: index]?.isActive == true ? Color.adaptiveGold(isHighContrast: isHighContrast) : .clear, radius: 5)
-                            .scaleEffect(gameViewModel.boards[safe: index]?.isActive == true ? 1.1 : 1.0)
-                            .animation(.spring(response: 0.5, dampingFraction: 0.6, blendDuration: 0.2), value: gameViewModel.boards[safe: index]?.isActive ?? false)
                             .accessibilityLabel("Board \(index + 1)")
                             .accessibilityHint(gameViewModel.boards[safe: index]?.isActive == true ? "Currently active" : "Not active")
                             .minimumScaleFactor(0.7)
                             .lineLimit(1)
-                            .hoverEffect(.lift)
                         
-                                                    // Board
-                            TicTacToeBoard(
-                                board: gameViewModel.boards[safe: index] ?? Board(id: index),
-                                isInteractive: gameViewModel.boards[safe: index]?.isActive == true
-                            ) { cellIndex in
-                                gameViewModel.makeMove(at: cellIndex)
-                            }
-                            .frame(width: actualBoardSize, height: actualBoardSize)
-                            .scaleEffect(gameViewModel.boards[safe: index]?.isActive == true ? 1.0 : 0.85)
-                            .opacity(gameViewModel.boards[safe: index]?.isActive == true ? 1.0 : 0.6)
-                            .animation(.spring(response: 0.6, dampingFraction: 0.7, blendDuration: 0.3), value: gameViewModel.boards[safe: index]?.isActive ?? false)
-                            .hoverEffect(.lift)
+                        // Board
+                        TicTacToeBoard(
+                            board: gameViewModel.boards[safe: index] ?? Board(id: index),
+                            isInteractive: gameViewModel.boards[safe: index]?.isActive == true
+                        ) { cellIndex in
+                            gameViewModel.makeMove(at: cellIndex)
+                        }
+                        .frame(width: actualBoardSize, height: actualBoardSize)
+                        .opacity(gameViewModel.boards[safe: index]?.isActive == true ? 1.0 : 0.5)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(
-                                    gameViewModel.boards[safe: index]?.isActive == true ? Color.adaptiveGold(isHighContrast: isHighContrast) : Color.clear,
-                                    lineWidth: 2
-                                )
-                                .scaleEffect(gameViewModel.boards[safe: index]?.isActive == true ? 1.05 : 1.0)
-                                .opacity(gameViewModel.boards[safe: index]?.isActive == true ? 0.8 : 0.0)
-                                .animation(.spring(response: 0.4, dampingFraction: 0.6), value: gameViewModel.boards[safe: index]?.isActive ?? false)
-                        )
-                        .overlay(
-                            // AI Loading overlay
+                            // Simple active indicator
                             Group {
-                                if gameViewModel.isAIMoving && gameViewModel.boards[safe: index]?.isActive == true {
-                                    ZStack {
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(Color.black.opacity(0.7))
-                                            .blur(radius: 0.5)
-                                        
-                                        VStack(spacing: 8) {
-                                            ProgressView()
-                                                .progressViewStyle(CircularProgressViewStyle(tint: Color.adaptiveGold(isHighContrast: isHighContrast)))
-                                                .scaleEffect(1.2)
-                                            
-                                            Text("AI Thinking...")
-                                                .font(.system(size: 12, weight: .medium))
-                                                .foregroundColor(.white)
-                                        }
-                                    }
-                                    .transition(.opacity.combined(with: .scale))
+                                if gameViewModel.boards[safe: index]?.isActive == true {
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.adaptiveGold(isHighContrast: isHighContrast), lineWidth: 2)
                                 }
                             }
-                            .animation(.easeInOut(duration: 0.3), value: gameViewModel.isAIMoving)
+                        )
+                        .overlay(
+                            // Simple AI indicator
+                            Group {
+                                if gameViewModel.isAIMoving && gameViewModel.boards[safe: index]?.isActive == true {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: Color.adaptiveGold(isHighContrast: isHighContrast)))
+                                        .scaleEffect(1.5)
+                                        .background(
+                                            Circle()
+                                                .fill(Color.black.opacity(0.3))
+                                                .frame(width: 40, height: 40)
+                                        )
+                                }
+                            }
                         )
                     }
                     .id(index)
@@ -297,18 +321,18 @@ private struct GameContent: View {
     private var boardSpacing: CGFloat {
         switch horizontalSizeClass {
         case .regular:
-            return verticalSizeClass == .regular ? 40 : 30
+            return verticalSizeClass == .regular ? 16 : 12
         case .compact:
-            return 20
+            return 10
         case .none:
-            return 25
+            return 12
         @unknown default:
-            return 25
+            return 12
         }
     }
     
     private var boardLabelFontSize: CGFloat {
-        let baseSize: CGFloat = horizontalSizeClass == .regular ? 16 : 14
+        let baseSize: CGFloat = horizontalSizeClass == .regular ? 14 : 12
         
         switch dynamicTypeSize {
         case .xSmall, .small:
@@ -333,39 +357,39 @@ private struct GameContent: View {
     private var boardSize: CGFloat {
         switch horizontalSizeClass {
         case .regular:
-            return verticalSizeClass == .regular ? 120 : 100
+            return verticalSizeClass == .regular ? 200 : 180
         case .compact:
-            return 80
+            return 160
         case .none:
-            return 90
+            return 170
         @unknown default:
-            return 90
+            return 170
         }
     }
     
     private var horizontalPadding: CGFloat {
         switch horizontalSizeClass {
         case .regular:
-            return 40
+            return 12
         case .compact:
-            return 20
+            return 8
         case .none:
-            return 25
+            return 10
         @unknown default:
-            return 25
+            return 10
         }
     }
     
     private var verticalPadding: CGFloat {
         switch verticalSizeClass {
         case .regular:
-            return 20
+            return 8
         case .compact:
-            return 10
+            return 6
         case .none:
-            return 15
+            return 7
         @unknown default:
-            return 15
+            return 7
         }
     }
     
@@ -376,39 +400,13 @@ private struct GameContent: View {
 
 private struct GameFooter: View {
     let gameViewModel: GameViewModel
-    @State private var showingPauseMenu = false
     
     var body: some View {
-        VStack(spacing: 16) {
-
-            
-            // Control buttons
-            HStack(spacing: 16) {
-                Button("Pause") {
-                    HapticManager.shared.impact(.medium)
-                    gameViewModel.pauseGame()
-                    showingPauseMenu = true
-                }
-                .metallicButton(isHighContrast: false)
-                .hoverEffect()
-                .accessibilityLabel("Pause Game")
-                .accessibilityHint("Pause the current game")
-                
-                Button("Reset") {
-                    HapticManager.shared.impact(.medium)
-                    gameViewModel.resetGame()
-                }
-                .metallicButton(isHighContrast: false)
-                .hoverEffect()
-                .accessibilityLabel("Reset Game")
-                .accessibilityHint("Start a new game")
-            }
+        VStack(spacing: 12) {
+            // Footer is now minimal since controls are in header
         }
         .padding(.horizontal)
-        .padding(.bottom, 8)
-        .sheet(isPresented: $showingPauseMenu) {
-            PauseMenuView(gameViewModel: gameViewModel)
-        }
+        .padding(.bottom, 4)
     }
 }
 
@@ -422,7 +420,7 @@ private struct ScoreDisplay: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     
     var body: some View {
-        VStack(spacing: 4) {
+        HStack(spacing: 6) {
             Text(player.displayName)
                 .font(.system(size: labelFontSize, weight: .medium))
                 .foregroundColor(.xoTextMuted)
@@ -445,7 +443,7 @@ private struct ScoreDisplay: View {
     }
     
     private var labelFontSize: CGFloat {
-        let baseSize: CGFloat = 12
+        let baseSize: CGFloat = 10
         
         switch dynamicTypeSize {
         case .xSmall, .small:
@@ -468,7 +466,7 @@ private struct ScoreDisplay: View {
     }
     
     private var scoreFontSize: CGFloat {
-        let baseSize: CGFloat = 24
+        let baseSize: CGFloat = 18
         
         switch dynamicTypeSize {
         case .xSmall, .small:
@@ -597,74 +595,7 @@ private struct TimerDisplay: View {
     }
 }
 
-private struct CurrentPlayerIndicator: View {
-    let gameViewModel: GameViewModel
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            Text("Current:")
-                .font(.system(size: labelFontSize, weight: .medium))
-                .foregroundColor(.xoTextMuted)
-                .minimumScaleFactor(0.8)
-                .lineLimit(1)
-            
-            Text(gameViewModel.currentPlayer.displayName)
-                .font(.system(size: playerFontSize, weight: .bold))
-                .foregroundColor(gameViewModel.currentPlayer == .x ? Color.adaptiveBlue() : Color.adaptiveOrange())
-                .glow(color: gameViewModel.currentPlayer == .x ? Color.adaptiveBlue() : Color.adaptiveOrange(), radius: 8)
-                .minimumScaleFactor(0.8)
-                .lineLimit(1)
-        }
-        .accessibilityLabel("Current player: \(gameViewModel.currentPlayer.displayName)")
-    }
-    
-    private var labelFontSize: CGFloat {
-        let baseSize: CGFloat = 12
-        
-        switch dynamicTypeSize {
-        case .xSmall, .small:
-            return baseSize
-        case .medium:
-            return baseSize * 0.95
-        case .large:
-            return baseSize * 0.9
-        case .xLarge:
-            return baseSize * 0.85
-        case .xxLarge:
-            return baseSize * 0.8
-        case .xxxLarge:
-            return baseSize * 0.75
-        case .accessibility1, .accessibility2, .accessibility3, .accessibility4, .accessibility5:
-            return baseSize * 0.7
-        @unknown default:
-            return baseSize * 0.95
-        }
-    }
-    
-    private var playerFontSize: CGFloat {
-        let baseSize: CGFloat = 18
-        
-        switch dynamicTypeSize {
-        case .xSmall, .small:
-            return baseSize
-        case .medium:
-            return baseSize * 0.95
-        case .large:
-            return baseSize * 0.9
-        case .xLarge:
-            return baseSize * 0.85
-        case .xxLarge:
-            return baseSize * 0.8
-        case .xxxLarge:
-            return baseSize * 0.75
-        case .accessibility1, .accessibility2, .accessibility3, .accessibility4, .accessibility5:
-            return baseSize * 0.7
-        @unknown default:
-            return baseSize * 0.95
-        }
-    }
-}
+
 
 
 

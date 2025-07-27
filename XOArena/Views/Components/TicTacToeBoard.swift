@@ -8,10 +8,6 @@ struct TicTacToeBoard: View {
     let isInteractive: Bool
     
     @State private var pressedCell: Int?
-    @State private var hoveredCell: Int?
-    @State private var boardScale: CGFloat = 1.0
-    @State private var boardRotation: Double = 0
-    @State private var isBoardAnimating = false
     
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.colorScheme) private var colorScheme
@@ -32,55 +28,21 @@ struct TicTacToeBoard: View {
                         EnhancedBoardCell(
                             cell: board.cells[index],
                             isPressed: pressedCell == index,
-                            isHovered: hoveredCell == index,
                             isInteractive: isInteractive && board.cells[index] == .empty,
                             position: (row, column),
                             boardState: boardState
                         ) {
                             handleCellTap(index)
-                        } onHover: { isHovered in
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                hoveredCell = isHovered ? index : nil
-                            }
                         }
                     }
                 }
             }
         }
-        .padding(12)
+        .padding(8)
         .background(
-            // Enhanced board background with 3D effect
-            ZStack {
-                // Base metallic background
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(LinearGradient.xoMetallicGradient)
-                    .shadow(color: .black.opacity(0.4), radius: 12, x: 0, y: 6)
-                
-                // Inner depth effect
-                RoundedRectangle(cornerRadius: 18)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.xoDarkerBackground.opacity(0.8),
-                                Color.xoDarkBackground.opacity(0.6)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .padding(2)
-                
-                // Border with glow
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(
-                        LinearGradient(
-                            colors: [Color.xoDarkMetallic, Color.xoMetallicSilver],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 2
-                    )
-            }
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.xoDarkBackground.opacity(0.8))
+                .stroke(Color.xoDarkMetallic, lineWidth: 1)
         )
         .overlay(
             // Winner celebration overlay
@@ -90,19 +52,9 @@ struct TicTacToeBoard: View {
                 }
             }
         )
-        .scaleEffect(boardScale)
-        .rotation3DEffect(
-            .degrees(boardRotation),
-            axis: (x: 0, y: 1, z: 0)
-        )
-        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: boardScale)
-        .animation(.easeInOut(duration: 0.8), value: boardRotation)
-        .onAppear {
-            animateBoardAppearance()
-        }
         .onChange(of: board.winner) { _, winner in
             if winner != nil {
-                animateWinnerCelebration()
+                // Simple winner indication
             }
         }
         .accessibilityElement(children: .contain)
@@ -134,37 +86,7 @@ struct TicTacToeBoard: View {
         }
     }
     
-    // MARK: - Animation Methods
-    
-    private func animateBoardAppearance() {
-        withAnimation(.spring(response: 0.8, dampingFraction: 0.7)) {
-            boardScale = 1.0
-        }
-        
-        withAnimation(.easeInOut(duration: 1.2).delay(0.3)) {
-            boardRotation = 360
-        }
-    }
-    
-    private func animateWinnerCelebration() {
-        // Board celebration animation
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
-            boardScale = 1.05
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
-                boardScale = 1.0
-            }
-        }
-        
-        // Particle effect
-        let center = CGPoint(
-            x: UIScreen.main.bounds.width * 0.5,
-            y: UIScreen.main.bounds.height * 0.5
-        )
-        particleManager.createBoardWinEffect(at: center, player: board.winner!)
-    }
+
     
     private func handleCellTap(_ index: Int) {
         guard isInteractive && board.cells[index] == .empty else { return }
@@ -192,112 +114,40 @@ struct TicTacToeBoard: View {
 struct EnhancedBoardCell: View {
     let cell: Cell
     let isPressed: Bool
-    let isHovered: Bool
     let isInteractive: Bool
     let position: (row: Int, column: Int)
     let boardState: BoardState
     let onTap: () -> Void
-    let onHover: (Bool) -> Void
     
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject private var particleManager: ParticleManager
     
-    @State private var isAnimating = false
-    @State private var cellFrame: CGRect = .zero
-    @State private var shimmerOffset: CGFloat = 0
-    @State private var pulseScale: CGFloat = 1.0
+
     
     var body: some View {
         Button(action: onTap) {
             ZStack {
-                // Enhanced cell background with 3D effect
-                RoundedRectangle(cornerRadius: 12)
+                // Simple cell background
+                RoundedRectangle(cornerRadius: 8)
                     .fill(cellBackground)
-                    .overlay(
-                        // Inner depth
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(cellInnerBackground)
-                            .padding(1)
-                    )
-                    .overlay(
-                        // Border with glow
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(cellBorder, lineWidth: cellBorderWidth)
-                            .shadow(color: cellGlowColor.opacity(0.6), radius: cellGlowRadius)
-                    )
-                    .shadow(
-                        color: cellShadowColor,
-                        radius: cellShadowRadius,
-                        x: cellShadowOffset.x,
-                        y: cellShadowOffset.y
-                    )
-                    .scaleEffect(cellScale)
-                    .rotation3DEffect(
-                        .degrees(cellRotation),
-                        axis: (x: cellRotationAxis.x, y: cellRotationAxis.y, z: cellRotationAxis.z)
-                    )
-                    .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isPressed)
-                    .animation(.spring(response: 0.5, dampingFraction: 0.6), value: cell)
-                    .animation(.easeInOut(duration: 0.3), value: isHovered)
+                    .stroke(cellBorder, lineWidth: 1)
+                    .scaleEffect(isPressed ? 0.95 : 1.0)
+                    .animation(.easeInOut(duration: 0.1), value: isPressed)
                 
-                // Shimmer effect for interactive cells
-                if isInteractive && isHovered {
-                    ShimmerEffect()
-                        .mask(
-                            RoundedRectangle(cornerRadius: 12)
-                        )
-                }
-                
-                // Cell content with enhanced animations
+                // Cell content
                 if cell != .empty {
-                    ZStack {
-                        // Background glow
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(cellContentGlow)
-                            .blur(radius: 8)
-                            .scaleEffect(pulseScale)
-                            .opacity(0.6)
-                        
-                        // Main content
-                        Text(cell.displayValue)
-                            .font(.system(size: cellFontSize, weight: .bold, design: .rounded))
-                            .foregroundStyle(cellTextGradient)
-                            .glow(color: cellGlowColor, radius: cellGlowRadius)
-                            .minimumScaleFactor(0.5)
-                            .scaleEffect(isAnimating ? 1.15 : 1.0)
-                            .rotationEffect(.degrees(isAnimating ? 5 : 0))
-                            .animation(.spring(response: 0.4, dampingFraction: 0.6), value: isAnimating)
-                    }
+                    Text(cell.displayValue)
+                        .font(.system(size: cellFontSize, weight: .bold))
+                        .foregroundColor(cell == .x ? Color.adaptiveBlue() : Color.adaptiveOrange())
+                        .minimumScaleFactor(0.5)
                 }
             }
         }
         .buttonStyle(PlainButtonStyle())
         .disabled(!isInteractive)
-        .onHover { isHovered in
-            onHover(isHovered)
-        }
-        .onAppear {
-            if cell != .empty {
-                animateCellAppearance()
-            }
-        }
-        .onChange(of: cell) { _, newCell in
-            if newCell != .empty {
-                animateCellChange(newCell)
-            }
-        }
-        .background(
-            GeometryReader { geometry in
-                Color.clear
-                    .onAppear {
-                        cellFrame = geometry.frame(in: .global)
-                    }
-                    .onChange(of: geometry.frame(in: .global)) { _, newFrame in
-                        cellFrame = newFrame
-                    }
-            }
-        )
+
+
         .accessibilityLabel(AccessibilityEnhancements.cellAccessibilityLabel(
             row: position.row,
             column: position.column,
@@ -335,215 +185,31 @@ struct EnhancedBoardCell: View {
         }
     }
     
-    private var cellBackground: LinearGradient {
+    private var cellBackground: Color {
         switch cell {
         case .empty:
-            return LinearGradient(
-                colors: [
-                    Color.xoDarkerBackground.opacity(0.9),
-                    Color.xoDarkBackground.opacity(0.7)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            return Color.xoDarkBackground.opacity(0.6)
         case .x:
-            return LinearGradient(
-                colors: [
-                    Color.adaptiveBlue().opacity(0.3),
-                    Color.xoCyanBlue.opacity(0.2)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            return Color.adaptiveBlue().opacity(0.1)
         case .o:
-            return LinearGradient(
-                colors: [
-                    Color.adaptiveOrange().opacity(0.3),
-                    Color.xoOrangeRed.opacity(0.2)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
+            return Color.adaptiveOrange().opacity(0.1)
         }
     }
     
-    private var cellInnerBackground: LinearGradient {
-        switch cell {
-        case .empty:
-            return LinearGradient(
-                colors: [
-                    Color.xoDarkBackground.opacity(0.5),
-                    Color.xoDarkerBackground.opacity(0.3)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        case .x:
-            return LinearGradient(
-                colors: [
-                    Color.adaptiveBlue().opacity(0.1),
-                    Color.xoCyanBlue.opacity(0.05)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        case .o:
-            return LinearGradient(
-                colors: [
-                    Color.adaptiveOrange().opacity(0.1),
-                    Color.xoOrangeRed.opacity(0.05)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        }
-    }
+
     
     private var cellBorder: Color {
         switch cell {
         case .empty:
-            return isHovered ? Color.xoGold.opacity(0.6) : Color.xoDarkMetallic
+            return Color.xoDarkMetallic.opacity(0.5)
         case .x:
-            return Color.adaptiveBlue()
+            return Color.adaptiveBlue().opacity(0.3)
         case .o:
-            return Color.adaptiveOrange()
+            return Color.adaptiveOrange().opacity(0.3)
         }
     }
     
-    private var cellBorderWidth: CGFloat {
-        switch cell {
-        case .empty:
-            return isHovered ? 2 : 1
-        case .x, .o:
-            return 2
-        }
-    }
-    
-    private var cellShadowColor: Color {
-        switch cell {
-        case .empty:
-            return isHovered ? Color.xoGold.opacity(0.3) : Color.black.opacity(0.3)
-        case .x:
-            return Color.adaptiveBlue().opacity(0.5)
-        case .o:
-            return Color.adaptiveOrange().opacity(0.5)
-        }
-    }
-    
-    private var cellShadowRadius: CGFloat {
-        switch cell {
-        case .empty:
-            return isHovered ? 8 : 4
-        case .x, .o:
-            return 6
-        }
-    }
-    
-    private var cellShadowOffset: (x: CGFloat, y: CGFloat) {
-        switch cell {
-        case .empty:
-            return isHovered ? (0, 3) : (0, 2)
-        case .x, .o:
-            return (0, 3)
-        }
-    }
-    
-    private var cellTextGradient: LinearGradient {
-        switch cell {
-        case .empty:
-            return LinearGradient(colors: [Color.clear], startPoint: .center, endPoint: .center)
-        case .x:
-            return LinearGradient(
-                colors: [
-                    Color.adaptiveBlue(),
-                    Color.xoCyanBlue,
-                    Color.adaptiveBlue()
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        case .o:
-            return LinearGradient(
-                colors: [
-                    Color.adaptiveOrange(),
-                    Color.xoOrangeRed,
-                    Color.adaptiveOrange()
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        }
-    }
-    
-    private var cellContentGlow: LinearGradient {
-        switch cell {
-        case .empty:
-            return LinearGradient(colors: [Color.clear], startPoint: .center, endPoint: .center)
-        case .x:
-            return LinearGradient(
-                colors: [
-                    Color.adaptiveBlue().opacity(0.8),
-                    Color.xoCyanBlue.opacity(0.6)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        case .o:
-            return LinearGradient(
-                colors: [
-                    Color.adaptiveOrange().opacity(0.8),
-                    Color.xoOrangeRed.opacity(0.6)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        }
-    }
-    
-    private var cellGlowColor: Color {
-        switch cell {
-        case .empty:
-            return Color.clear
-        case .x:
-            return Color.adaptiveBlue()
-        case .o:
-            return Color.adaptiveOrange()
-        }
-    }
-    
-    private var cellGlowRadius: CGFloat {
-        switch cell {
-        case .empty:
-            return 0
-        case .x, .o:
-            return isAnimating ? 15 : 12
-        }
-    }
-    
-    private var cellScale: CGFloat {
-        if isInteractive {
-            if isPressed {
-                return 0.92
-            } else if isHovered {
-                return 1.05
-            }
-        }
-        return 1.0
-    }
-    
-    private var cellRotation: Double {
-        if cell != .empty {
-            return isAnimating ? 8 : 0
-        }
-        return 0
-    }
-    
-    private var cellRotationAxis: (x: Double, y: Double, z: Double) {
-        if cell != .empty {
-            return (x: 0, y: 0, z: isAnimating ? 1 : 0)
-        }
-        return (x: 0, y: 0, z: 0)
-    }
+
     
     private var cellAccessibilityTraits: AccessibilityTraits {
         var traits: AccessibilityTraits = []
@@ -560,132 +226,22 @@ struct EnhancedBoardCell: View {
         return traits
     }
     
-    // MARK: - Animation Methods
-    
-    private func animateCellAppearance() {
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.6)) {
-            isAnimating = true
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                isAnimating = false
-            }
-        }
-    }
-    
-    private func animateCellChange(_ newCell: Cell) {
-        // Trigger animation
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
-            isAnimating = true
-        }
-        
-        // Create particle effect
-        let center = CGPoint(
-            x: cellFrame.midX,
-            y: cellFrame.midY
-        )
-        let player: Player = newCell == .x ? .x : .o
-        particleManager.createMoveEffect(at: center, player: player)
-        
-        // Pulse animation
-        withAnimation(.easeInOut(duration: 0.3)) {
-            pulseScale = 1.2
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                isAnimating = false
-                pulseScale = 1.0
-            }
-        }
-    }
+
 }
 
-// MARK: - Shimmer Effect Component
 
-struct ShimmerEffect: View {
-    @State private var shimmerOffset: CGFloat = -1
-    
-    var body: some View {
-        LinearGradient(
-            colors: [
-                Color.clear,
-                Color.xoGold.opacity(0.3),
-                Color.clear
-            ],
-            startPoint: .leading,
-            endPoint: .trailing
-        )
-        .offset(x: shimmerOffset)
-        .onAppear {
-            withAnimation(
-                .linear(duration: 1.5)
-                .repeatForever(autoreverses: false)
-            ) {
-                shimmerOffset = 1
-            }
-        }
-    }
-}
 
 // MARK: - Winner Celebration Overlay
 
 struct WinnerCelebrationOverlay: View {
     let winner: Player
     
-    @State private var celebrationScale: CGFloat = 0
-    @State private var celebrationOpacity: Double = 0
-    @State private var isAnimating = false
-    
     var body: some View {
-        ZStack {
-            // Background glow
-            RoundedRectangle(cornerRadius: 20)
-                .fill(
-                    RadialGradient(
-                        colors: [
-                            winner == .x ? Color.adaptiveBlue().opacity(0.3) : Color.adaptiveOrange().opacity(0.3),
-                            Color.clear
-                        ],
-                        center: .center,
-                        startRadius: 0,
-                        endRadius: 100
-                    )
-                )
-                .scaleEffect(celebrationScale)
-                .opacity(celebrationOpacity)
-            
-            // Border glow
-            RoundedRectangle(cornerRadius: 20)
-                .stroke(
-                    winner == .x ? Color.adaptiveBlue() : Color.adaptiveOrange(),
-                    lineWidth: 4
-                )
-                .glow(
-                    color: winner == .x ? Color.adaptiveBlue() : Color.adaptiveOrange(),
-                    radius: 20
-                )
-                .scaleEffect(celebrationScale)
-                .opacity(celebrationOpacity)
-        }
-        .onAppear {
-            animateCelebration()
-        }
-    }
-    
-    private func animateCelebration() {
-        withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
-            celebrationScale = 1.0
-            celebrationOpacity = 1.0
-        }
-        
-        withAnimation(
-            .easeInOut(duration: 2.0)
-            .repeatForever(autoreverses: true)
-        ) {
-            isAnimating = true
-        }
+        RoundedRectangle(cornerRadius: 12)
+            .stroke(
+                winner == .x ? Color.adaptiveBlue() : Color.adaptiveOrange(),
+                lineWidth: 3
+            )
     }
 }
 
