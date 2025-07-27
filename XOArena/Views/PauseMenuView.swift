@@ -45,50 +45,47 @@ struct PauseMenuView: View {
                 
                 // Action buttons
                 VStack(spacing: 16) {
-                    ActionButton(
+                    SimpleActionButton(
                         title: "RESUME",
                         icon: "play.fill",
-                        isSelected: selectedButton == "resume",
-                        action: {
-                            withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
-                                selectedButton = "resume"
-                            }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                gameViewModel.resumeGame()
-                                dismiss()
-                            }
+                        isSelected: selectedButton == "resume"
+                    ) {
+                        withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
+                            selectedButton = "resume"
                         }
-                    )
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            gameViewModel.resumeGame()
+                            dismiss()
+                        }
+                    }
                     
-                    ActionButton(
+                    SimpleActionButton(
                         title: "RESTART",
                         icon: "arrow.clockwise",
-                        isSelected: selectedButton == "restart",
-                        action: {
-                            withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
-                                selectedButton = "restart"
-                            }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                gameViewModel.resetGame()
-                                dismiss()
-                            }
+                        isSelected: selectedButton == "restart"
+                    ) {
+                        withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
+                            selectedButton = "restart"
                         }
-                    )
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            gameViewModel.resetGame()
+                            dismiss()
+                        }
+                    }
                     
-                    ActionButton(
+                    SimpleActionButton(
                         title: "MAIN MENU",
                         icon: "house.fill",
-                        isSelected: selectedButton == "mainMenu",
-                        action: {
-                            withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
-                                selectedButton = "mainMenu"
-                            }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                gameViewModel.gameState = .menu
-                                dismiss()
-                            }
+                        isSelected: selectedButton == "mainMenu"
+                    ) {
+                        withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
+                            selectedButton = "mainMenu"
                         }
-                    )
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            gameViewModel.gameState = .menu
+                            dismiss()
+                        }
+                    }
                 }
                 .padding(.horizontal, 40)
             }

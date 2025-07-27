@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Intro Screen
+// MARK: - Enhanced Intro Screen
 
 struct IntroScreen: View {
     let onStartGame: () -> Void
@@ -8,95 +8,135 @@ struct IntroScreen: View {
     let onShowSettings: () -> Void
     
     @State private var isAnimating = false
+    @State private var titleScale: CGFloat = 0.8
+    @State private var subtitleOpacity: Double = 0
+    @State private var buttonsOffset: CGFloat = 50
+    @State private var buttonsOpacity: Double = 0
     @State private var selectedButton: String?
+    
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @EnvironmentObject private var particleManager: ParticleManager
     
     var body: some View {
         ZStack {
-            // Animated background
-            AnimatedBackground()
+            // Background
+            LinearGradient.xoBackgroundGradient
+                .ignoresSafeArea()
             
-            VStack(spacing: 40) {
+            VStack(spacing: 0) {
                 Spacer()
                 
-                // Title with enhanced animations
-                VStack(spacing: 16) {
-                    Text("XO")
-                        .font(.system(size: titleFontSize, weight: .black, design: .rounded))
-                        .goldText()
-                        .glow(color: Color.xoGold, radius: 20)
-                        .scaleEffect(isAnimating ? 1.05 : 1.0)
-                        .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: isAnimating)
-                    
-                    Text("ARENA")
-                        .font(.system(size: subtitleFontSize, weight: .black, design: .rounded))
-                        .foregroundColor(.xoTextSecondary)
-                        .glow(color: Color.xoTextSecondary, radius: 10)
-                        .opacity(isAnimating ? 0.8 : 1.0)
-                        .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true).delay(0.5), value: isAnimating)
-                }
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("XO Arena")
-                
-                // Subtitle
-                Text("8 Boards. 1 Champion.")
-                    .font(.system(size: subtitleFontSize * 0.6, weight: .medium))
-                    .foregroundColor(.xoTextMuted)
-                    .multilineTextAlignment(.center)
-                    .accessibilityLabel("8 Boards. 1 Champion.")
-                
-                Spacer()
-                
-                // Action buttons with enhanced styling
+                // Title section
                 VStack(spacing: 20) {
-                    Button("START GAME") {
-                        HapticManager.shared.impact(.medium)
-                        onStartGame()
+                    VStack(spacing: 8) {
+                        Text("XO")
+                            .font(.system(size: titleFontSize, weight: .black, design: .rounded))
+                            .goldText()
+                            .glow(color: Color.xoGold, radius: 25)
+                            .scaleEffect(titleScale)
+                            .rotation3DEffect(
+                                .degrees(isAnimating ? 5 : 0),
+                                axis: (x: 1, y: 0, z: 0)
+                            )
+                            .animation(.spring(response: 0.8, dampingFraction: 0.6), value: titleScale)
+                            .animation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true), value: isAnimating)
+                        
+                        Text("ARENA")
+                            .font(.system(size: subtitleFontSize, weight: .black, design: .rounded))
+                            .foregroundStyle(LinearGradient.xoGoldGradient)
+                            .glow(color: Color.xoGold, radius: 15)
+                            .opacity(subtitleOpacity)
+                            .scaleEffect(isAnimating ? 1.02 : 1.0)
+                            .animation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true).delay(0.3), value: isAnimating)
                     }
-                    .metallicButton()
-                    .accessibilityLabel("Start game")
-                    .accessibilityHint("Begin a new game")
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("XO Arena")
                     
-                    Button("HOW TO PLAY") {
-                        HapticManager.shared.impact(.light)
-                        onShowTutorial()
+                    // Subtitle
+                    VStack(spacing: 8) {
+                        Text("8 Boards. 1 Champion.")
+                            .font(.system(size: subtitleFontSize * 0.7, weight: .semibold))
+                            .foregroundStyle(LinearGradient.xoGoldGradient)
+                            .multilineTextAlignment(.center)
+                            .opacity(subtitleOpacity)
+                            .accessibilityLabel("8 Boards. 1 Champion.")
+                        
+                        Text("Master the ultimate Tic-Tac-Toe experience")
+                            .font(.system(size: subtitleFontSize * 0.4, weight: .medium))
+                            .foregroundColor(.xoTextMuted)
+                            .multilineTextAlignment(.center)
+                            .opacity(subtitleOpacity * 0.8)
+                            .accessibilityLabel("Master the ultimate Tic-Tac-Toe experience")
                     }
-                    .metallicButton()
-                    .accessibilityLabel("How to play")
-                    .accessibilityHint("Learn the game rules")
-                    
-                    Button("SETTINGS") {
-                        HapticManager.shared.impact(.light)
-                        onShowSettings()
-                    }
-                    .metallicButton()
-                    .accessibilityLabel("Settings")
-                    .accessibilityHint("Configure game options")
                 }
                 .padding(.horizontal, 40)
                 
                 Spacer()
                 
-                // Footer with version info
-                VStack(spacing: 8) {
-                    Text("Version 1.0")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.xoTextMuted)
-                        .accessibilityLabel("Version 1.0")
+                // Action buttons
+                VStack(spacing: 24) {
+                    SimpleActionButton(
+                        title: "START GAME",
+                        icon: "play.fill",
+                        isSelected: selectedButton == "start"
+                    ) {
+                        triggerStartGame()
+                    }
                     
-                    Text("© 2025 XO Arena")
-                        .font(.system(size: 10, weight: .regular))
-                        .foregroundColor(.xoTextMuted.opacity(0.7))
-                        .accessibilityLabel("Copyright 2025 XO Arena")
+                    SimpleActionButton(
+                        title: "HOW TO PLAY",
+                        icon: "questionmark.circle.fill",
+                        isSelected: selectedButton == "tutorial"
+                    ) {
+                        triggerShowTutorial()
+                    }
+                    
+                    SimpleActionButton(
+                        title: "SETTINGS",
+                        icon: "gearshape.fill",
+                        isSelected: selectedButton == "settings"
+                    ) {
+                        triggerShowSettings()
+                    }
                 }
+                .offset(y: buttonsOffset)
+                .opacity(buttonsOpacity)
+                .padding(.horizontal, 40)
+                
+                Spacer()
+                
+                // Footer
+                VStack(spacing: 12) {
+                    // Stats
+                    HStack(spacing: 30) {
+                        SimpleStatBadge(icon: "trophy.fill", value: "1.2K", label: "Games Won")
+                        SimpleStatBadge(icon: "clock.fill", value: "45s", label: "Best Time")
+                        SimpleStatBadge(icon: "star.fill", value: "4.9", label: "Rating")
+                    }
+                    .opacity(buttonsOpacity * 0.8)
+                    
+                    // Version info
+                    VStack(spacing: 6) {
+                        Text("Version 1.0 • Premium Edition")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.xoTextMuted)
+                            .accessibilityLabel("Version 1.0 Premium Edition")
+                        
+                        Text("© 2025 XO Arena • Crafted with ❤️")
+                            .font(.system(size: 10, weight: .regular))
+                            .foregroundColor(.xoTextMuted.opacity(0.7))
+                            .accessibilityLabel("Copyright 2025 XO Arena")
+                    }
+                    .opacity(buttonsOpacity * 0.6)
+                }
+                .offset(y: buttonsOffset * 0.5)
+                .opacity(buttonsOpacity * 0.8)
             }
             .padding()
         }
         .onAppear {
-            withAnimation(.easeInOut(duration: 1.0)) {
-                isAnimating = true
-            }
+            animateIntroSequence()
         }
         .highContrastSupport(isHighContrast: false)
         .dynamicTypeSupport()
@@ -104,8 +144,79 @@ struct IntroScreen: View {
         .accessibilityLabel("XO Arena Main Menu")
     }
     
+    // MARK: - Animation Methods
+    
+    private func animateIntroSequence() {
+        // Phase 1: Title animation
+        withAnimation(.spring(response: 1.2, dampingFraction: 0.7).delay(0.3)) {
+            titleScale = 1.0
+        }
+        
+        // Phase 2: Subtitle fade in
+        withAnimation(.easeInOut(duration: 0.8).delay(0.8)) {
+            subtitleOpacity = 1.0
+        }
+        
+        // Phase 3: Buttons slide in
+        withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(1.2)) {
+            buttonsOffset = 0
+            buttonsOpacity = 1.0
+        }
+        
+        // Phase 4: Start continuous animations
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            withAnimation(.easeInOut(duration: 1.0)) {
+                isAnimating = true
+            }
+        }
+    }
+    
+    private func triggerStartGame() {
+        HapticManager.shared.impact(.heavy)
+        
+        let center = CGPoint(
+            x: UIScreen.main.bounds.width * 0.5,
+            y: UIScreen.main.bounds.height * 0.5
+        )
+        particleManager.createButtonPressEffect(at: center)
+        
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+            selectedButton = "start"
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            onStartGame()
+        }
+    }
+    
+    private func triggerShowTutorial() {
+        HapticManager.shared.impact(.medium)
+        
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+            selectedButton = "tutorial"
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            onShowTutorial()
+        }
+    }
+    
+    private func triggerShowSettings() {
+        HapticManager.shared.impact(.medium)
+        
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+            selectedButton = "settings"
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            onShowSettings()
+        }
+    }
+    
+    // MARK: - Computed Properties
+    
     private var titleFontSize: CGFloat {
-        let baseSize: CGFloat = horizontalSizeClass == .regular ? 80 : 60
+        let baseSize: CGFloat = horizontalSizeClass == .regular ? 90 : 70
         
         switch dynamicTypeSize {
         case .xSmall, .small:
@@ -128,7 +239,7 @@ struct IntroScreen: View {
     }
     
     private var subtitleFontSize: CGFloat {
-        let baseSize: CGFloat = horizontalSizeClass == .regular ? 32 : 24
+        let baseSize: CGFloat = horizontalSizeClass == .regular ? 36 : 28
         
         switch dynamicTypeSize {
         case .xSmall, .small:
@@ -151,9 +262,9 @@ struct IntroScreen: View {
     }
 }
 
-// MARK: - Action Button Component
+// MARK: - Simple Action Button Component
 
-struct ActionButton: View {
+struct SimpleActionButton: View {
     let title: String
     let icon: String
     let isSelected: Bool
@@ -161,50 +272,49 @@ struct ActionButton: View {
     
     @State private var isPressed = false
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @EnvironmentObject private var particleManager: ParticleManager
     
     var body: some View {
         Button(action: {
-            HapticManager.shared.impact(.light)
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                isPressed = true
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                isPressed = false
-                action()
-            }
+            handleButtonPress()
         }) {
-            HStack(spacing: 12) {
+            HStack(spacing: 16) {
                 Image(systemName: icon)
                     .font(.system(size: iconFontSize, weight: .semibold))
-                    .foregroundColor(isSelected ? .xoDarkerBackground : .xoGold)
+                    .foregroundStyle(isSelected ? LinearGradient(
+                        colors: [Color.xoDarkerBackground, Color.xoDarkBackground],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ) : LinearGradient.xoGoldGradient)
                 
                 Text(title)
                     .font(.system(size: buttonFontSize, weight: .bold, design: .rounded))
-                    .foregroundColor(isSelected ? .xoDarkerBackground : .xoTextPrimary)
+                    .foregroundStyle(isSelected ? LinearGradient(
+                        colors: [Color.xoDarkerBackground, Color.xoDarkBackground],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ) : LinearGradient(
+                        colors: [Color.xoTextPrimary, Color.xoTextSecondary],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ))
+                    .minimumScaleFactor(0.8)
             }
             .frame(maxWidth: .infinity)
             .frame(height: buttonHeight)
             .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(
-                        isSelected ? LinearGradient.xoGoldGradient : LinearGradient.xoMetallicGradient
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(
-                                isSelected ? Color.xoGold : Color.xoDarkMetallic,
-                                lineWidth: 2
-                            )
-                    )
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(isSelected ? LinearGradient.xoGoldGradient : LinearGradient.xoMetallicGradient)
                     .shadow(
-                        color: isSelected ? Color.xoGold.opacity(0.4) : Color.black.opacity(0.3),
+                        color: isSelected ? Color.xoGold.opacity(0.5) : Color.black.opacity(0.4),
                         radius: isPressed ? 4 : 8,
                         x: 0,
                         y: isPressed ? 2 : 4
                     )
             )
             .scaleEffect(isPressed ? 0.95 : 1.0)
-            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
+            .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isPressed)
+            .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isSelected)
         }
         .buttonStyle(PlainButtonStyle())
         .accessibilityLabel(title)
@@ -213,29 +323,6 @@ struct ActionButton: View {
     }
     
     private var buttonFontSize: CGFloat {
-        let baseSize: CGFloat = 18
-        
-        switch dynamicTypeSize {
-        case .xSmall, .small:
-            return baseSize
-        case .medium:
-            return baseSize * 0.95
-        case .large:
-            return baseSize * 0.9
-        case .xLarge:
-            return baseSize * 0.85
-        case .xxLarge:
-            return baseSize * 0.8
-        case .xxxLarge:
-            return baseSize * 0.75
-        case .accessibility1, .accessibility2, .accessibility3, .accessibility4, .accessibility5:
-            return baseSize * 0.7
-        @unknown default:
-            return baseSize * 0.95
-        }
-    }
-    
-    private var iconFontSize: CGFloat {
         let baseSize: CGFloat = 20
         
         switch dynamicTypeSize {
@@ -258,8 +345,31 @@ struct ActionButton: View {
         }
     }
     
+    private var iconFontSize: CGFloat {
+        let baseSize: CGFloat = 22
+        
+        switch dynamicTypeSize {
+        case .xSmall, .small:
+            return baseSize
+        case .medium:
+            return baseSize * 0.95
+        case .large:
+            return baseSize * 0.9
+        case .xLarge:
+            return baseSize * 0.85
+        case .xxLarge:
+            return baseSize * 0.8
+        case .xxxLarge:
+            return baseSize * 0.75
+        case .accessibility1, .accessibility2, .accessibility3, .accessibility4, .accessibility5:
+            return baseSize * 0.7
+        @unknown default:
+            return baseSize * 0.95
+        }
+    }
+    
     private var buttonHeight: CGFloat {
-        let baseHeight: CGFloat = 56
+        let baseHeight: CGFloat = 60
         
         switch dynamicTypeSize {
         case .xSmall, .small:
@@ -280,79 +390,81 @@ struct ActionButton: View {
             return baseHeight * 0.95
         }
     }
-}
-
-// MARK: - Animated Background
-
-struct AnimatedBackground: View {
-    @State private var animationPhase: CGFloat = 0
     
-    var body: some View {
-        ZStack {
-            // Base gradient
-            LinearGradient.xoBackgroundGradient
-                .ignoresSafeArea()
+    private func handleButtonPress() {
+        HapticManager.shared.impact(.medium)
+        
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+            isPressed = true
+        }
+        
+        let center = CGPoint(
+            x: UIScreen.main.bounds.width * 0.5,
+            y: UIScreen.main.bounds.height * 0.5
+        )
+        particleManager.createButtonPressEffect(at: center)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                isPressed = false
+            }
             
-            // Animated light effects
-            GeometryReader { geometry in
-                ZStack {
-                    // Floating particles
-                    ForEach(0..<20, id: \.self) { index in
-                        Circle()
-                            .fill(Color.xoGold.opacity(0.1))
-                            .frame(width: CGFloat.random(in: 2...6))
-                            .position(
-                                x: CGFloat.random(in: 0...geometry.size.width),
-                                y: CGFloat.random(in: 0...geometry.size.height)
-                            )
-                            .animation(
-                                Animation.easeInOut(duration: Double.random(in: 3...6))
-                                    .repeatForever(autoreverses: true)
-                                    .delay(Double.random(in: 0...2)),
-                                value: animationPhase
-                            )
-                    }
-                    
-                    // Light trails
-                    VStack {
-                        HStack {
-                            Rectangle()
-                                .fill(LinearGradient.xoBlueGradient)
-                                .frame(width: 2, height: 150)
-                                .blur(radius: 3)
-                                .opacity(0.4)
-                                .offset(x: sin(animationPhase) * 20)
-                            
-                            Spacer()
-                            
-                            Rectangle()
-                                .fill(LinearGradient.xoOrangeGradient)
-                                .frame(width: 2, height: 150)
-                                .blur(radius: 3)
-                                .opacity(0.4)
-                                .offset(x: cos(animationPhase) * 20)
-                        }
-                        Spacer()
-                    }
-                    .padding(.top, 100)
-                }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                action()
             }
         }
-        .onAppear {
-            withAnimation(.linear(duration: 10).repeatForever(autoreverses: false)) {
-                animationPhase = 1
-            }
-        }
-        .accessibilityHidden(true)
     }
 }
 
-// MARK: - Preview
+// MARK: - Simple Stat Badge Component
 
-#Preview {
+struct SimpleStatBadge: View {
+    let icon: String
+    let value: String
+    let label: String
+    
+    @State private var isAnimating = false
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(LinearGradient.xoGoldGradient)
+                .scaleEffect(isAnimating ? 1.1 : 1.0)
+                .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: isAnimating)
+            
+            Text(value)
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(.xoTextPrimary)
+            
+            Text(label)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(.xoTextMuted)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.xoDarkerBackground.opacity(0.6))
+                .stroke(Color.xoGold.opacity(0.3), lineWidth: 1)
+        )
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.0).delay(Double.random(in: 0...1))) {
+                isAnimating = true
+            }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(label): \(value)")
+    }
+}
+
+// MARK: - Enhanced Preview
+
+#Preview("Enhanced Intro Screen") {
     IntroScreen(
         onStartGame: {},
         onShowTutorial: {},
         onShowSettings: {}
     )
+    .environmentObject(ParticleManager())
 } 

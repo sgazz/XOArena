@@ -39,7 +39,7 @@ struct GameScreen: View {
         .onAppear {
             // Game content is now fully visible without scrolling
         }
-        .onChange(of: gameViewModel.gameState) { newState in
+        .onChange(of: gameViewModel.gameState) { oldState, newState in
             if newState == .paused {
                 FeedbackManager.shared.buttonPressed()
             } else if newState == .menu {
@@ -62,7 +62,7 @@ struct GameScreen: View {
                 }
             )
         }
-        .onChange(of: gameViewModel.showVictory) { _, newValue in
+        .onChange(of: gameViewModel.showVictory) { oldValue, newValue in
             showingVictory = newValue
             if newValue {
                 HapticManager.shared.victoryCelebration()

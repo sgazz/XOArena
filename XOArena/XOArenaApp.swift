@@ -9,10 +9,13 @@ import SwiftUI
 
 @main
 struct XOArenaApp: App {
+    @StateObject private var particleManager = ParticleManager()
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .preferredColorScheme(.dark) // Force dark mode for the metallic theme
+                .environmentObject(particleManager)
         }
     }
 }

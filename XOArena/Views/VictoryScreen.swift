@@ -49,33 +49,31 @@ struct VictoryScreen: View {
                 
                 // Action buttons
                 VStack(spacing: 16) {
-                    ActionButton(
+                    SimpleActionButton(
                         title: "PLAY AGAIN",
                         icon: "arrow.clockwise",
-                        isSelected: selectedButton == "playAgain",
-                        action: {
-                            withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
-                                selectedButton = "playAgain"
-                            }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                onPlayAgain()
-                            }
+                        isSelected: selectedButton == "playAgain"
+                    ) {
+                        withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
+                            selectedButton = "playAgain"
                         }
-                    )
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            onPlayAgain()
+                        }
+                    }
                     
-                    ActionButton(
+                    SimpleActionButton(
                         title: "MAIN MENU",
                         icon: "house.fill",
-                        isSelected: selectedButton == "mainMenu",
-                        action: {
-                            withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
-                                selectedButton = "mainMenu"
-                            }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                onMainMenu()
-                            }
+                        isSelected: selectedButton == "mainMenu"
+                    ) {
+                        withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
+                            selectedButton = "mainMenu"
                         }
-                    )
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            onMainMenu()
+                        }
+                    }
                 }
                 .padding(.horizontal, 40)
                 
