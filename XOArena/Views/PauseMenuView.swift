@@ -18,19 +18,17 @@ struct PauseMenuView: View {
                 }
             
             // Menu content
-            VStack(spacing: 32) {
+            VStack(spacing: 24) {
                 // Header
-                VStack(spacing: 12) {
+                VStack(spacing: 16) {
                     Image(systemName: "pause.circle.fill")
                         .font(.system(size: 48, weight: .light))
                         .foregroundColor(.xoGold)
-                        .glow(color: Color.xoGold, radius: 10)
                         .accessibilityLabel("Pause icon")
                     
                     Text("GAME PAUSED")
-                        .font(.system(size: titleFontSize, weight: .black, design: .rounded))
-                        .goldText()
-                        .glow(color: Color.xoGold, radius: 15)
+                        .font(.system(size: titleFontSize, weight: .bold))
+                        .foregroundColor(.xoGold)
                         .accessibilityLabel("Game Paused")
                     
                     Text("Take a break or continue your battle")
@@ -44,58 +42,61 @@ struct PauseMenuView: View {
                 GameInfoCard(gameViewModel: gameViewModel)
                 
                 // Action buttons
-                VStack(spacing: 16) {
-                    SimpleActionButton(
+                VStack(spacing: 12) {
+                    ActionButton(
                         title: "RESUME",
                         icon: "play.fill",
-                        isSelected: selectedButton == "resume"
-                    ) {
-                        withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
-                            selectedButton = "resume"
+                        isSelected: selectedButton == "resume",
+                        action: {
+                            withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
+                                selectedButton = "resume"
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                gameViewModel.resumeGame()
+                                dismiss()
+                            }
                         }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                            gameViewModel.resumeGame()
-                            dismiss()
-                        }
-                    }
+                    )
                     
-                    SimpleActionButton(
+                    ActionButton(
                         title: "RESTART",
                         icon: "arrow.clockwise",
-                        isSelected: selectedButton == "restart"
-                    ) {
-                        withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
-                            selectedButton = "restart"
+                        isSelected: selectedButton == "restart",
+                        action: {
+                            withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
+                                selectedButton = "restart"
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                gameViewModel.resetGame()
+                                dismiss()
+                            }
                         }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                            gameViewModel.resetGame()
-                            dismiss()
-                        }
-                    }
+                    )
                     
-                    SimpleActionButton(
+                    ActionButton(
                         title: "MAIN MENU",
                         icon: "house.fill",
-                        isSelected: selectedButton == "mainMenu"
-                    ) {
-                        withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
-                            selectedButton = "mainMenu"
+                        isSelected: selectedButton == "mainMenu",
+                        action: {
+                            withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
+                                selectedButton = "mainMenu"
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                gameViewModel.gameState = .menu
+                                dismiss()
+                            }
                         }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                            gameViewModel.gameState = .menu
-                            dismiss()
-                        }
-                    }
+                    )
                 }
-                .padding(.horizontal, 40)
+                .padding(.horizontal, 32)
             }
             .padding(32)
             .background(
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(LinearGradient.xoMetallicGradient)
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color.xoDarkBackground.opacity(0.95))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 24)
-                            .stroke(Color.xoDarkMetallic, lineWidth: 2)
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.xoGold.opacity(0.3), lineWidth: 1)
                     )
                     .shadow(color: .black.opacity(0.5), radius: 20, x: 0, y: 10)
             )
@@ -108,7 +109,7 @@ struct PauseMenuView: View {
     }
     
     private var titleFontSize: CGFloat {
-        let baseSize: CGFloat = horizontalSizeClass == .regular ? 32 : 28
+        let baseSize: CGFloat = horizontalSizeClass == .regular ? 28 : 24
         
         switch dynamicTypeSize {
         case .xSmall, .small:
@@ -131,7 +132,70 @@ struct PauseMenuView: View {
     }
     
     private var subtitleFontSize: CGFloat {
-        let baseSize: CGFloat = horizontalSizeClass == .regular ? 18 : 16
+        let baseSize: CGFloat = horizontalSizeClass == .regular ? 16 : 14
+        
+        switch dynamicTypeSize {
+        case .xSmall, .small:
+            return baseSize
+        case .medium:
+            return baseSize * 0.95
+        case .large:
+            return baseSize * 0.9
+        case .xLarge:
+            return baseSize * 0.85
+        case .xxLarge:
+            return baseSize * 0.8
+        case .xxxLarge:
+            return baseSize * 0.75
+        case .accessibility1, .accessibility2, .accessibility3, .accessibility4, .accessibility5:
+            return baseSize * 0.7
+        @unknown default:
+            return baseSize * 0.95
+        }
+    }
+}
+
+// MARK: - Action Button
+
+struct ActionButton: View {
+    let title: String
+    let icon: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(isSelected ? .xoDarkBackground : .xoGold)
+                
+                Text(title)
+                    .font(.system(size: buttonFontSize, weight: .bold))
+                    .foregroundColor(isSelected ? .xoDarkBackground : .xoGold)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isSelected ? Color.xoGold : Color.xoDarkBackground.opacity(0.8))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.xoGold.opacity(0.5), lineWidth: 1)
+                    )
+            )
+            .scaleEffect(isSelected ? 0.98 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: isSelected)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .accessibilityLabel(title)
+        .accessibilityHint("Double tap to \(title.lowercased())")
+    }
+    
+    private var buttonFontSize: CGFloat {
+        let baseSize: CGFloat = 16
         
         switch dynamicTypeSize {
         case .xSmall, .small:
@@ -163,11 +227,11 @@ struct GameInfoCard: View {
     var body: some View {
         VStack(spacing: 16) {
             Text("CURRENT GAME")
-                .font(.system(size: 16, weight: .bold))
+                .font(.system(size: 14, weight: .bold))
                 .foregroundColor(.xoTextPrimary)
                 .accessibilityLabel("Current Game Information")
             
-            HStack(spacing: 24) {
+            HStack(spacing: 20) {
                 // Score
                 VStack(spacing: 8) {
                     Text("SCORE")
@@ -175,7 +239,7 @@ struct GameInfoCard: View {
                         .foregroundColor(.xoTextMuted)
                         .accessibilityLabel("Score")
                     
-                    HStack(spacing: 12) {
+                    HStack(spacing: 16) {
                         VStack(spacing: 4) {
                             Text("X")
                                 .font(.system(size: 12, weight: .bold))

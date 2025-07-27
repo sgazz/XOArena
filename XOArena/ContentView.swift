@@ -137,139 +137,256 @@ struct GameSetupScreen: View {
     @State private var selectedAIDifficulty: AIDifficulty = .normal
     @State private var isAIGame: Bool = false
     
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    
     var body: some View {
         ZStack {
             LinearGradient.xoBackgroundGradient
                 .ignoresSafeArea()
             
-            VStack(spacing: 30) {
-                // Title
-                Text("GAME SETUP")
-                    .font(.system(size: 32, weight: .black, design: .rounded))
-                    .goldText()
-                    .glow(color: Color.xoGold, radius: 15)
-                    .accessibilityLabel("Game Setup Title")
-                
-                // Game mode selection
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Game Mode")
-                        .font(.headline)
-                        .foregroundColor(.xoTextPrimary)
-                        .accessibilityLabel("Game Mode Selection")
+            VStack(spacing: 20) {
+                // Header
+                VStack(spacing: 12) {
+                    Image(systemName: "gamecontroller.fill")
+                        .font(.system(size: 40, weight: .light))
+                        .foregroundColor(.xoGold)
+                        .accessibilityLabel("Game Setup icon")
                     
-                    HStack(spacing: 16) {
-                        ForEach(GameMode.allCases, id: \.self) { mode in
-                            Button(mode.displayName) {
-                                selectedGameMode = mode
-                            }
-                            .metallicButton(isPressed: selectedGameMode == mode, isHighContrast: false)
-                            .foregroundColor(selectedGameMode == mode ? .xoDarkerBackground : .xoTextPrimary)
-                            .accessibilityLabel("\(mode.displayName) mode")
-                            .accessibilityHint(selectedGameMode == mode ? "Currently selected" : "Select \(mode.displayName) mode")
-                        }
-                    }
+                    Text("GAME SETUP")
+                        .font(.system(size: titleFontSize, weight: .bold))
+                        .foregroundColor(.xoGold)
+                        .accessibilityLabel("Game Setup Title")
                 }
                 
-                // Timer duration (if timed mode)
-                if selectedGameMode == .timed {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Timer Duration")
-                            .font(.headline)
-                            .foregroundColor(.xoTextPrimary)
-                            .accessibilityLabel("Timer Duration Selection")
-                        
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 12) {
-                            ForEach(TimerDuration.allCases, id: \.self) { duration in
-                                Button(duration.displayName) {
-                                    selectedTimerDuration = duration
-                                }
-                                .metallicButton(isPressed: selectedTimerDuration == duration, isHighContrast: false)
-                                .foregroundColor(selectedTimerDuration == duration ? .xoDarkerBackground : .xoTextPrimary)
-                                .accessibilityLabel("\(duration.displayName) timer")
-                                .accessibilityHint(selectedTimerDuration == duration ? "Currently selected" : "Select \(duration.displayName) timer")
-                            }
-                        }
+                // Compact settings grid
+                VStack(spacing: 16) {
+                    // Game Mode Row
+                    CompactSettingsRow(
+                        title: "Game Mode",
+                        options: GameMode.allCases.map { $0.displayName },
+                        selectedIndex: GameMode.allCases.firstIndex(of: selectedGameMode) ?? 0
+                    ) { index in
+                        selectedGameMode = GameMode.allCases[index]
                     }
-                }
-                
-                // AI opponent selection
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Opponent")
-                        .font(.headline)
-                        .foregroundColor(.xoTextPrimary)
-                        .accessibilityLabel("Opponent Selection")
                     
-                    HStack(spacing: 16) {
-                        Button("Human") {
-                            isAIGame = false
+                    // Timer Duration Row (if timed mode)
+                    if selectedGameMode == .timed {
+                        CompactSettingsRow(
+                            title: "Timer",
+                            options: TimerDuration.allCases.map { $0.displayName },
+                            selectedIndex: TimerDuration.allCases.firstIndex(of: selectedTimerDuration) ?? 0
+                        ) { index in
+                            selectedTimerDuration = TimerDuration.allCases[index]
                         }
-                        .metallicButton(isPressed: !isAIGame, isHighContrast: false)
-                        .foregroundColor(!isAIGame ? .xoDarkerBackground : .xoTextPrimary)
-                        .accessibilityLabel("Human opponent")
-                        .accessibilityHint(!isAIGame ? "Currently selected" : "Play against another human")
-                        
-                        Button("AI") {
-                            isAIGame = true
-                        }
-                        .metallicButton(isPressed: isAIGame, isHighContrast: false)
-                        .foregroundColor(isAIGame ? .xoDarkerBackground : .xoTextPrimary)
-                        .accessibilityLabel("AI opponent")
-                        .accessibilityHint(isAIGame ? "Currently selected" : "Play against computer")
                     }
-                }
-                
-                // AI difficulty (if AI game)
-                if isAIGame {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("AI Difficulty")
-                            .font(.headline)
-                            .foregroundColor(.xoTextPrimary)
-                            .accessibilityLabel("AI Difficulty Selection")
-                        
-                        HStack(spacing: 12) {
-                            ForEach(AIDifficulty.allCases, id: \.self) { difficulty in
-                                Button(difficulty.displayName) {
-                                    selectedAIDifficulty = difficulty
-                                }
-                                .metallicButton(isPressed: selectedAIDifficulty == difficulty, isHighContrast: false)
-                                .foregroundColor(selectedAIDifficulty == difficulty ? .xoDarkerBackground : .xoTextPrimary)
-                                .accessibilityLabel("\(difficulty.displayName) difficulty")
-                                .accessibilityHint(selectedAIDifficulty == difficulty ? "Currently selected" : "Select \(difficulty.displayName) difficulty")
-                            }
+                    
+                    // Opponent Row
+                    CompactSettingsRow(
+                        title: "Opponent",
+                        options: ["Human", "AI"],
+                        selectedIndex: isAIGame ? 1 : 0
+                    ) { index in
+                        isAIGame = index == 1
+                    }
+                    
+                    // AI Difficulty Row (if AI game)
+                    if isAIGame {
+                        CompactSettingsRow(
+                            title: "AI Level",
+                            options: AIDifficulty.allCases.map { $0.displayName },
+                            selectedIndex: AIDifficulty.allCases.firstIndex(of: selectedAIDifficulty) ?? 0
+                        ) { index in
+                            selectedAIDifficulty = AIDifficulty.allCases[index]
                         }
                     }
                 }
+                .padding(.horizontal, 20)
                 
                 Spacer()
                 
                 // Action buttons
-                HStack(spacing: 20) {
-                    Button("BACK") {
-                        onBack()
-                    }
-                    .metallicButton(isHighContrast: false)
-                    .accessibilityLabel("Back to main menu")
+                VStack(spacing: 12) {
+                    ActionButton(
+                        title: "START GAME",
+                        icon: "play.fill",
+                        isSelected: false,
+                        action: {
+                            gameViewModel.startNewGame(
+                                aiGame: isAIGame,
+                                aiDifficulty: selectedAIDifficulty,
+                                gameMode: selectedGameMode,
+                                timerDuration: selectedTimerDuration
+                            )
+                            onStartGame()
+                        }
+                    )
                     
-                    Button("START") {
-                        gameViewModel.startNewGame(
-                            aiGame: isAIGame,
-                            aiDifficulty: selectedAIDifficulty,
-                            gameMode: selectedGameMode,
-                            timerDuration: selectedTimerDuration
-                        )
-                        onStartGame()
-                    }
-                    .metallicButton(isHighContrast: false)
-                    .accessibilityLabel("Start game")
-                    .accessibilityHint("Begin the game with selected settings")
+                    ActionButton(
+                        title: "BACK",
+                        icon: "arrow.left",
+                        isSelected: false,
+                        action: onBack
+                    )
                 }
+                .padding(.horizontal, 32)
             }
-            .padding()
+            .padding(.vertical, 20)
+        }
+        .onAppear {
+            // Initialize with default values (these will be set per game)
+            selectedGameMode = .classic
+            selectedTimerDuration = .threeMinutes
+            selectedAIDifficulty = .normal
+            isAIGame = false
         }
         .highContrastSupport(isHighContrast: false)
         .dynamicTypeSupport()
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Game Setup Screen")
+    }
+    
+    private var titleFontSize: CGFloat {
+        let baseSize: CGFloat = horizontalSizeClass == .regular ? 24 : 20
+        
+        switch dynamicTypeSize {
+        case .xSmall, .small:
+            return baseSize
+        case .medium:
+            return baseSize * 0.95
+        case .large:
+            return baseSize * 0.9
+        case .xLarge:
+            return baseSize * 0.85
+        case .xxLarge:
+            return baseSize * 0.8
+        case .xxxLarge:
+            return baseSize * 0.75
+        case .accessibility1, .accessibility2, .accessibility3, .accessibility4, .accessibility5:
+            return baseSize * 0.7
+        @unknown default:
+            return baseSize * 0.95
+        }
+    }
+}
+
+// MARK: - Compact Settings Row
+
+struct CompactSettingsRow: View {
+    let title: String
+    let options: [String]
+    let selectedIndex: Int
+    let onSelectionChanged: (Int) -> Void
+    
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.system(size: labelFontSize, weight: .semibold))
+                .foregroundColor(.xoTextPrimary)
+                .accessibilityLabel("\(title) selection")
+            
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: options.count), spacing: 8) {
+                ForEach(Array(options.enumerated()), id: \.offset) { index, option in
+                    CompactOptionButton(
+                        title: option,
+                        isSelected: selectedIndex == index,
+                        action: {
+                            onSelectionChanged(index)
+                        }
+                    )
+                }
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.xoDarkerBackground.opacity(0.8))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.xoDarkMetallic, lineWidth: 1)
+                )
+        )
+    }
+    
+    private var labelFontSize: CGFloat {
+        let baseSize: CGFloat = 16
+        
+        switch dynamicTypeSize {
+        case .xSmall, .small:
+            return baseSize
+        case .medium:
+            return baseSize * 0.95
+        case .large:
+            return baseSize * 0.9
+        case .xLarge:
+            return baseSize * 0.85
+        case .xxLarge:
+            return baseSize * 0.8
+        case .xxxLarge:
+            return baseSize * 0.75
+        case .accessibility1, .accessibility2, .accessibility3, .accessibility4, .accessibility5:
+            return baseSize * 0.7
+        @unknown default:
+            return baseSize * 0.95
+        }
+    }
+}
+
+// MARK: - Compact Option Button
+
+struct CompactOptionButton: View {
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: buttonFontSize, weight: .medium))
+                .foregroundColor(isSelected ? .xoDarkBackground : .xoGold)
+                .frame(maxWidth: .infinity)
+                .frame(height: 40)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(isSelected ? Color.xoGold : Color.xoDarkBackground.opacity(0.6))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.xoGold.opacity(0.5), lineWidth: 1)
+                        )
+                )
+                .scaleEffect(isSelected ? 0.95 : 1.0)
+                .animation(.easeInOut(duration: 0.1), value: isSelected)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .accessibilityLabel(title)
+        .accessibilityHint(isSelected ? "Currently selected" : "Select \(title)")
+    }
+    
+    private var buttonFontSize: CGFloat {
+        let baseSize: CGFloat = 14
+        
+        switch dynamicTypeSize {
+        case .xSmall, .small:
+            return baseSize
+        case .medium:
+            return baseSize * 0.95
+        case .large:
+            return baseSize * 0.9
+        case .xLarge:
+            return baseSize * 0.85
+        case .xxLarge:
+            return baseSize * 0.8
+        case .xxxLarge:
+            return baseSize * 0.75
+        case .accessibility1, .accessibility2, .accessibility3, .accessibility4, .accessibility5:
+            return baseSize * 0.7
+        @unknown default:
+            return baseSize * 0.95
+        }
     }
 }
 
@@ -413,6 +530,8 @@ struct SettingsScreen: View {
     let onBack: () -> Void
     
     @State private var settings: GameSettings
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     init(gameViewModel: GameViewModel, onBack: @escaping () -> Void) {
         self.gameViewModel = gameViewModel
@@ -425,80 +544,250 @@ struct SettingsScreen: View {
             LinearGradient.xoBackgroundGradient
                 .ignoresSafeArea()
             
-            VStack(spacing: 20) {
-                Text("SETTINGS")
-                    .font(.system(size: 28, weight: .black, design: .rounded))
-                    .goldText()
-                    .glow(color: Color.xoGold, radius: 15)
-                    .accessibilityLabel("Settings Title")
+            VStack(spacing: 24) {
+                // Header
+                VStack(spacing: 16) {
+                    Image(systemName: "gearshape.fill")
+                        .font(.system(size: 48, weight: .light))
+                        .foregroundColor(.xoGold)
+                        .accessibilityLabel("Settings icon")
+                    
+                    Text("SETTINGS")
+                        .font(.system(size: titleFontSize, weight: .bold))
+                        .foregroundColor(.xoGold)
+                        .accessibilityLabel("Settings Title")
+                }
                 
                 ScrollView {
                     VStack(spacing: 20) {
-                        SettingsSection(title: "AI Difficulty") {
-                            ForEach(AIDifficulty.allCases, id: \.self) { difficulty in
-                                Button(difficulty.displayName) {
-                                    settings.aiDifficulty = difficulty
-                                }
-                                .metallicButton(isPressed: settings.aiDifficulty == difficulty, isHighContrast: false)
-                                .foregroundColor(settings.aiDifficulty == difficulty ? .xoDarkerBackground : .xoTextPrimary)
-                                .accessibilityLabel("\(difficulty.displayName) AI difficulty")
-                                .accessibilityHint(settings.aiDifficulty == difficulty ? "Currently selected" : "Select \(difficulty.displayName) difficulty")
-                            }
-                        }
-                        
-                        SettingsSection(title: "Game Mode") {
-                            ForEach(GameMode.allCases, id: \.self) { mode in
-                                Button(mode.displayName) {
-                                    settings.gameMode = mode
-                                }
-                                .metallicButton(isPressed: settings.gameMode == mode, isHighContrast: false)
-                                .foregroundColor(settings.gameMode == mode ? .xoDarkerBackground : .xoTextPrimary)
-                                .accessibilityLabel("\(mode.displayName) game mode")
-                                .accessibilityHint(settings.gameMode == mode ? "Currently selected" : "Select \(mode.displayName) mode")
-                            }
-                        }
-                        
-                        SettingsSection(title: "Timer Duration") {
-                            ForEach(TimerDuration.allCases, id: \.self) { duration in
-                                Button(duration.displayName) {
-                                    settings.timerDuration = duration
-                                }
-                                .metallicButton(isPressed: settings.timerDuration == duration, isHighContrast: false)
-                                .foregroundColor(settings.timerDuration == duration ? .xoDarkerBackground : .xoTextPrimary)
-                                .accessibilityLabel("\(duration.displayName) timer")
-                                .accessibilityHint(settings.timerDuration == duration ? "Currently selected" : "Select \(duration.displayName) timer")
-                            }
-                        }
-                        
                         SettingsSection(title: "Sound & Haptics") {
-                            Toggle("Sound Effects", isOn: $settings.soundEnabled)
-                                .toggleStyle(MetallicToggleStyle())
-                                .accessibilityLabel("Sound Effects")
-                                .accessibilityHint("Enable or disable sound effects")
-                            
-                            Toggle("Haptic Feedback", isOn: $settings.hapticEnabled)
-                                .toggleStyle(MetallicToggleStyle())
-                                .accessibilityLabel("Haptic Feedback")
-                                .accessibilityHint("Enable or disable haptic feedback")
+                            VStack(spacing: 16) {
+                                SettingsToggle(
+                                    title: "Sound Effects",
+                                    isOn: $settings.soundEnabled
+                                )
+                                
+                                SettingsToggle(
+                                    title: "Haptic Feedback",
+                                    isOn: $settings.hapticEnabled
+                                )
+                            }
+                        }
+                        
+                        SettingsSection(title: "Accessibility") {
+                            VStack(spacing: 16) {
+                                SettingsToggle(
+                                    title: "High Contrast Mode",
+                                    isOn: $settings.highContrastMode
+                                )
+                                
+                                SettingsToggle(
+                                    title: "Reduce Motion",
+                                    isOn: $settings.reduceMotion
+                                )
+                            }
+                        }
+                        
+                        SettingsSection(title: "Game Options") {
+                            VStack(spacing: 16) {
+                                SettingsToggle(
+                                    title: "Auto Save",
+                                    isOn: $settings.autoSaveEnabled
+                                )
+                                
+                                SettingsToggle(
+                                    title: "Show Tutorial",
+                                    isOn: $settings.tutorialShown
+                                )
+                            }
                         }
                     }
-                    .padding()
+                    .padding(.horizontal, 20)
                 }
                 
-                Button("SAVE") {
-                    gameViewModel.updateSettings(settings)
-                    onBack()
+                // Action buttons
+                VStack(spacing: 12) {
+                    ActionButton(
+                        title: "SAVE",
+                        icon: "checkmark",
+                        isSelected: false,
+                        action: {
+                            gameViewModel.updateSettings(settings)
+                            onBack()
+                        }
+                    )
+                    
+                    ActionButton(
+                        title: "BACK",
+                        icon: "arrow.left",
+                        isSelected: false,
+                        action: onBack
+                    )
                 }
-                .metallicButton(isHighContrast: false)
-                .accessibilityLabel("Save settings")
-                .accessibilityHint("Save changes and return to main menu")
+                .padding(.horizontal, 32)
             }
-            .padding()
+            .padding(.vertical, 20)
         }
         .highContrastSupport(isHighContrast: false)
         .dynamicTypeSupport()
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Settings Screen")
+    }
+    
+    private var titleFontSize: CGFloat {
+        let baseSize: CGFloat = horizontalSizeClass == .regular ? 28 : 24
+        
+        switch dynamicTypeSize {
+        case .xSmall, .small:
+            return baseSize
+        case .medium:
+            return baseSize * 0.95
+        case .large:
+            return baseSize * 0.9
+        case .xLarge:
+            return baseSize * 0.85
+        case .xxLarge:
+            return baseSize * 0.8
+        case .xxxLarge:
+            return baseSize * 0.75
+        case .accessibility1, .accessibility2, .accessibility3, .accessibility4, .accessibility5:
+            return baseSize * 0.7
+        @unknown default:
+            return baseSize * 0.95
+        }
+    }
+}
+
+// MARK: - Settings Button
+
+struct SettingsButton: View {
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                Text(title)
+                    .font(.system(size: buttonFontSize, weight: .medium))
+                    .foregroundColor(isSelected ? .xoDarkBackground : .xoGold)
+                
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.xoDarkBackground)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isSelected ? Color.xoGold : Color.xoDarkBackground.opacity(0.8))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.xoGold.opacity(0.5), lineWidth: 1)
+                    )
+            )
+            .scaleEffect(isSelected ? 0.98 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: isSelected)
+        }
+        .buttonStyle(PlainButtonStyle())
+        .accessibilityLabel(title)
+        .accessibilityHint(isSelected ? "Currently selected" : "Select \(title)")
+    }
+    
+    private var buttonFontSize: CGFloat {
+        let baseSize: CGFloat = 16
+        
+        switch dynamicTypeSize {
+        case .xSmall, .small:
+            return baseSize
+        case .medium:
+            return baseSize * 0.95
+        case .large:
+            return baseSize * 0.9
+        case .xLarge:
+            return baseSize * 0.85
+        case .xxLarge:
+            return baseSize * 0.8
+        case .xxxLarge:
+            return baseSize * 0.75
+        case .accessibility1, .accessibility2, .accessibility3, .accessibility4, .accessibility5:
+            return baseSize * 0.7
+        @unknown default:
+            return baseSize * 0.95
+        }
+    }
+}
+
+// MARK: - Settings Toggle
+
+struct SettingsToggle: View {
+    let title: String
+    @Binding var isOn: Bool
+    
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    
+    var body: some View {
+        HStack {
+            Text(title)
+                .font(.system(size: toggleFontSize, weight: .medium))
+                .foregroundColor(.xoTextPrimary)
+            
+            Spacer()
+            
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isOn.toggle()
+                }
+            }) {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(isOn ? Color.xoGold : Color.xoDarkBackground.opacity(0.8))
+                    .frame(width: 50, height: 30)
+                    .overlay(
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 26, height: 26)
+                            .offset(x: isOn ? 10 : -10)
+                            .animation(.easeInOut(duration: 0.2), value: isOn)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.xoGold.opacity(0.5), lineWidth: 1)
+                    )
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .accessibilityLabel(title)
+        .accessibilityValue(isOn ? "On" : "Off")
+        .accessibilityHint("Double tap to toggle")
+    }
+    
+    private var toggleFontSize: CGFloat {
+        let baseSize: CGFloat = 16
+        
+        switch dynamicTypeSize {
+        case .xSmall, .small:
+            return baseSize
+        case .medium:
+            return baseSize * 0.95
+        case .large:
+            return baseSize * 0.9
+        case .xLarge:
+            return baseSize * 0.85
+        case .xxLarge:
+            return baseSize * 0.8
+        case .xxxLarge:
+            return baseSize * 0.75
+        case .accessibility1, .accessibility2, .accessibility3, .accessibility4, .accessibility5:
+            return baseSize * 0.7
+        @unknown default:
+            return baseSize * 0.95
+        }
     }
 }
 
@@ -515,6 +804,7 @@ struct SettingsScreen: View {
 struct SettingsSection<Content: View>: View {
     let title: String
     let content: Content
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     
     init(title: String, @ViewBuilder content: () -> Content) {
         self.title = title
@@ -522,13 +812,45 @@ struct SettingsSection<Content: View>: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             Text(title)
-                .font(.headline)
+                .font(.system(size: sectionTitleFontSize, weight: .bold))
                 .foregroundColor(.xoTextPrimary)
                 .accessibilityLabel("\(title) section")
             
             content
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.xoDarkerBackground.opacity(0.8))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.xoDarkMetallic, lineWidth: 1)
+                )
+        )
+    }
+    
+    private var sectionTitleFontSize: CGFloat {
+        let baseSize: CGFloat = 18
+        
+        switch dynamicTypeSize {
+        case .xSmall, .small:
+            return baseSize
+        case .medium:
+            return baseSize * 0.95
+        case .large:
+            return baseSize * 0.9
+        case .xLarge:
+            return baseSize * 0.85
+        case .xxLarge:
+            return baseSize * 0.8
+        case .xxxLarge:
+            return baseSize * 0.75
+        case .accessibility1, .accessibility2, .accessibility3, .accessibility4, .accessibility5:
+            return baseSize * 0.7
+        @unknown default:
+            return baseSize * 0.95
         }
     }
 }
@@ -537,48 +859,6 @@ struct SettingsSection<Content: View>: View {
     SettingsSection(title: "Test Section") {
         Text("This is a test content for the settings section")
             .foregroundColor(.xoTextPrimary)
-    }
-    .padding()
-    .background(LinearGradient.xoBackgroundGradient)
-}
-
-// MARK: - Metallic Toggle Style
-
-struct MetallicToggleStyle: ToggleStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        HStack {
-            configuration.label
-                .foregroundColor(.xoTextPrimary)
-            
-            Spacer()
-            
-            RoundedRectangle(cornerRadius: 16)
-                .fill(configuration.isOn ? LinearGradient.xoGoldGradient : LinearGradient.xoMetallicGradient)
-                .frame(width: 50, height: 30)
-                .overlay(
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 26, height: 26)
-                        .offset(x: configuration.isOn ? 10 : -10)
-                        .animation(.easeInOut(duration: 0.2), value: configuration.isOn)
-                )
-                .onTapGesture {
-                    configuration.isOn.toggle()
-                }
-                .accessibilityLabel("Toggle")
-                .accessibilityValue(configuration.isOn ? "On" : "Off")
-                .accessibilityHint("Double tap to toggle")
-        }
-    }
-}
-
-#Preview("Metallic Toggle Style") {
-    VStack(spacing: 20) {
-        Toggle("Sound Effects", isOn: .constant(true))
-            .toggleStyle(MetallicToggleStyle())
-        
-        Toggle("Haptic Feedback", isOn: .constant(false))
-            .toggleStyle(MetallicToggleStyle())
     }
     .padding()
     .background(LinearGradient.xoBackgroundGradient)

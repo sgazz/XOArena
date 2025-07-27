@@ -43,6 +43,12 @@ extension Color {
     /// Dark metallic for borders
     static let xoDarkMetallic = Color(red: 0.3, green: 0.3, blue: 0.35)
     
+    /// Inactive board background color
+    static let xoInactiveBoardBackground = Color(red: 0.12, green: 0.12, blue: 0.16)
+    
+    /// Inactive board border color
+    static let xoInactiveBoardBorder = Color(red: 0.4, green: 0.35, blue: 0.2)
+    
     // MARK: - Status Colors
     
     /// Success green

@@ -138,11 +138,6 @@ import SwiftUI
         
         resetGame()
         
-        // Update settings with new values
-        settings.aiDifficulty = aiDifficulty
-        settings.gameMode = gameMode
-        settings.timerDuration = timerDuration
-        
         // Save settings with error handling
         do {
             try saveSettings()
@@ -487,16 +482,10 @@ import SwiftUI
         do {
             let loadedSettings = try JSONDecoder().decode(GameSettings.self, from: data)
             settings = loadedSettings
-            aiDifficulty = settings.aiDifficulty
-            gameMode = settings.gameMode
-            timerDuration = settings.timerDuration
         } catch {
             print("Failed to load settings: \(error)")
             // Use default settings if loading fails
             settings = GameSettings()
-            aiDifficulty = settings.aiDifficulty
-            gameMode = settings.gameMode
-            timerDuration = settings.timerDuration
         }
     }
     
@@ -523,14 +512,6 @@ import SwiftUI
     /// Update settings
     func updateSettings(_ newSettings: GameSettings) {
         settings = newSettings
-        aiDifficulty = settings.aiDifficulty
-        gameMode = settings.gameMode
-        timerDuration = settings.timerDuration
-        
-        // Update timer if game is currently running
-        if gameMode == .timed && gameState == .playing {
-            timeRemaining = TimeInterval(timerDuration.rawValue)
-        }
         
         // Save settings with error handling
         do {

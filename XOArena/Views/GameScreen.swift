@@ -113,13 +113,15 @@ private struct GameHeader: View {
             // Header with controls and scores
             HStack(spacing: 16) {
                 // Pause button
-                Button("Pause") {
+                Button {
                     HapticManager.shared.impact(.medium)
                     gameViewModel.pauseGame()
                     showingPauseMenu = true
+                } label: {
+                    Image(systemName: "pause.fill")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.xoTextMuted)
                 }
-                .font(.system(size: 10, weight: .medium))
-                .foregroundColor(.xoTextMuted)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(
@@ -163,12 +165,14 @@ private struct GameHeader: View {
                     .frame(width: 1, height: 32)
                 
                 // Reset button
-                Button("Reset") {
+                Button {
                     HapticManager.shared.impact(.medium)
                     gameViewModel.resetGame()
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.xoTextMuted)
                 }
-                .font(.system(size: 10, weight: .medium))
-                .foregroundColor(.xoTextMuted)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(
@@ -265,16 +269,16 @@ private struct GameContent: View {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: actualSpacing), count: 2), spacing: 8) {
                 ForEach(0..<gameViewModel.boards.count, id: \.self) { index in
                     VStack(spacing: 4) {
-                        // Simple board indicator
+                        // Board label with improved visibility
                         Text("BOARD \(index + 1)")
                             .font(.system(size: boardLabelFontSize, weight: .bold))
-                            .foregroundColor(gameViewModel.boards[safe: index]?.isActive == true ? Color.adaptiveGold(isHighContrast: isHighContrast) : .xoTextMuted)
+                            .foregroundColor(boardLabelColor(for: index))
                             .accessibilityLabel("Board \(index + 1)")
                             .accessibilityHint(gameViewModel.boards[safe: index]?.isActive == true ? "Currently active" : "Not active")
                             .minimumScaleFactor(0.7)
                             .lineLimit(1)
                         
-                        // Board
+                        // Board with improved styling
                         TicTacToeBoard(
                             board: gameViewModel.boards[safe: index] ?? Board(id: index),
                             isInteractive: gameViewModel.boards[safe: index]?.isActive == true
@@ -282,18 +286,9 @@ private struct GameContent: View {
                             gameViewModel.makeMove(at: cellIndex)
                         }
                         .frame(width: actualBoardSize, height: actualBoardSize)
-                        .opacity(gameViewModel.boards[safe: index]?.isActive == true ? 1.0 : 0.5)
+                        .opacity(boardOpacity(for: index))
                         .overlay(
-                            // Simple active indicator
-                            Group {
-                                if gameViewModel.boards[safe: index]?.isActive == true {
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.adaptiveGold(isHighContrast: isHighContrast), lineWidth: 2)
-                                }
-                            }
-                        )
-                        .overlay(
-                            // Simple AI indicator
+                            // AI indicator
                             Group {
                                 if gameViewModel.isAIMoving && gameViewModel.boards[safe: index]?.isActive == true {
                                     ProgressView()
@@ -313,6 +308,24 @@ private struct GameContent: View {
             }
             .padding(.horizontal, horizontalPadding)
             .padding(.vertical, verticalPadding)
+        }
+    }
+    
+    // MARK: - Board Styling Helper Methods
+    
+    private func boardLabelColor(for index: Int) -> Color {
+        if gameViewModel.boards[safe: index]?.isActive == true {
+            return Color.adaptiveGold(isHighContrast: isHighContrast)
+        } else {
+            return Color.xoTextMuted.opacity(0.6)
+        }
+    }
+    
+    private func boardOpacity(for index: Int) -> Double {
+        if gameViewModel.boards[safe: index]?.isActive == true {
+            return 1.0
+        } else {
+            return 0.6
         }
     }
     
@@ -392,8 +405,6 @@ private struct GameContent: View {
             return 7
         }
     }
-    
-
 }
 
 // MARK: - Game Footer

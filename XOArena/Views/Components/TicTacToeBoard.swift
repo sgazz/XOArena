@@ -41,8 +41,8 @@ struct TicTacToeBoard: View {
         .padding(8)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.xoDarkBackground.opacity(0.8))
-                .stroke(Color.xoDarkMetallic, lineWidth: 1)
+                .fill(boardBackgroundColor)
+                .stroke(boardBorderColor, lineWidth: boardBorderWidth)
         )
         .overlay(
             // Winner celebration overlay
@@ -86,7 +86,31 @@ struct TicTacToeBoard: View {
         }
     }
     
-
+    // MARK: - Board Styling Properties
+    
+    private var boardBackgroundColor: Color {
+        if board.isActive {
+            return Color.xoDarkBackground.opacity(0.8)
+        } else {
+            return Color.xoInactiveBoardBackground
+        }
+    }
+    
+    private var boardBorderColor: Color {
+        if board.isActive {
+            return Color.xoGold
+        } else {
+            return Color.xoInactiveBoardBorder
+        }
+    }
+    
+    private var boardBorderWidth: CGFloat {
+        if board.isActive {
+            return 2.0
+        } else {
+            return 1.0
+        }
+    }
     
     private func handleCellTap(_ index: Int) {
         guard isInteractive && board.cells[index] == .empty else { return }
@@ -123,8 +147,6 @@ struct EnhancedBoardCell: View {
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject private var particleManager: ParticleManager
     
-
-    
     var body: some View {
         Button(action: onTap) {
             ZStack {
@@ -146,8 +168,6 @@ struct EnhancedBoardCell: View {
         }
         .buttonStyle(PlainButtonStyle())
         .disabled(!isInteractive)
-
-
         .accessibilityLabel(AccessibilityEnhancements.cellAccessibilityLabel(
             row: position.row,
             column: position.column,
@@ -196,8 +216,6 @@ struct EnhancedBoardCell: View {
         }
     }
     
-
-    
     private var cellBorder: Color {
         switch cell {
         case .empty:
@@ -208,8 +226,6 @@ struct EnhancedBoardCell: View {
             return Color.adaptiveOrange().opacity(0.3)
         }
     }
-    
-
     
     private var cellAccessibilityTraits: AccessibilityTraits {
         var traits: AccessibilityTraits = []
@@ -225,11 +241,7 @@ struct EnhancedBoardCell: View {
         
         return traits
     }
-    
-
 }
-
-
 
 // MARK: - Winner Celebration Overlay
 

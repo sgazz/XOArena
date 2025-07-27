@@ -21,10 +21,11 @@ struct VictoryScreen: View {
     
     var body: some View {
         ZStack {
-            // Animated background
-            VictoryBackground()
+            // Background
+            LinearGradient.xoBackgroundGradient
+                .ignoresSafeArea()
             
-            VStack(spacing: 40) {
+            VStack(spacing: 32) {
                 Spacer()
                 
                 // Victory content
@@ -48,34 +49,36 @@ struct VictoryScreen: View {
                 Spacer()
                 
                 // Action buttons
-                VStack(spacing: 16) {
-                    SimpleActionButton(
+                VStack(spacing: 12) {
+                    ActionButton(
                         title: "PLAY AGAIN",
                         icon: "arrow.clockwise",
-                        isSelected: selectedButton == "playAgain"
-                    ) {
-                        withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
-                            selectedButton = "playAgain"
+                        isSelected: selectedButton == "playAgain",
+                        action: {
+                            withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
+                                selectedButton = "playAgain"
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                onPlayAgain()
+                            }
                         }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                            onPlayAgain()
-                        }
-                    }
+                    )
                     
-                    SimpleActionButton(
+                    ActionButton(
                         title: "MAIN MENU",
                         icon: "house.fill",
-                        isSelected: selectedButton == "mainMenu"
-                    ) {
-                        withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
-                            selectedButton = "mainMenu"
+                        isSelected: selectedButton == "mainMenu",
+                        action: {
+                            withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
+                                selectedButton = "mainMenu"
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                onMainMenu()
+                            }
                         }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                            onMainMenu()
-                        }
-                    }
+                    )
                 }
-                .padding(.horizontal, 40)
+                .padding(.horizontal, 32)
                 
                 Spacer()
             }
@@ -109,40 +112,21 @@ struct VictoryIcon: View {
     
     var body: some View {
         ZStack {
-            // Background glow
-            Circle()
-                .fill(
-                    RadialGradient(
-                        colors: [
-                            iconGlowColor.opacity(0.3),
-                            iconGlowColor.opacity(0.1),
-                            Color.clear
-                        ],
-                        center: .center,
-                        startRadius: 0,
-                        endRadius: 80
-                    )
-                )
-                .frame(width: 160, height: 160)
-                .scaleEffect(isAnimating ? 1.1 : 1.0)
-                .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: isAnimating)
-            
             // Icon container
             Circle()
-                .fill(LinearGradient.xoMetallicGradient)
+                .fill(Color.xoDarkBackground.opacity(0.8))
                 .frame(width: 120, height: 120)
                 .overlay(
                     Circle()
-                        .stroke(iconGlowColor, lineWidth: 3)
-                        .glow(color: iconGlowColor, radius: 10)
+                        .stroke(iconBorderColor, lineWidth: 2)
                 )
-                .shadow(color: iconGlowColor.opacity(0.4), radius: 20, x: 0, y: 10)
+                .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
             
             // Icon
             Image(systemName: iconName)
                 .font(.system(size: 48, weight: .bold))
-                .foregroundStyle(iconGradient)
-                .scaleEffect(isAnimating ? 1.1 : 1.0)
+                .foregroundColor(iconColor)
+                .scaleEffect(isAnimating ? 1.05 : 1.0)
                 .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true).delay(0.3), value: isAnimating)
         }
         .onAppear {
@@ -159,7 +143,7 @@ struct VictoryIcon: View {
         }
     }
     
-    private var iconGlowColor: Color {
+    private var iconColor: Color {
         if isDraw {
             return Color.xoGold
         } else {
@@ -167,13 +151,11 @@ struct VictoryIcon: View {
         }
     }
     
-    private var iconGradient: LinearGradient {
+    private var iconBorderColor: Color {
         if isDraw {
-            return LinearGradient.xoGoldGradient
+            return Color.xoGold.opacity(0.6)
         } else {
-            return winner == .x ? 
-                LinearGradient(colors: [Color.adaptiveBlue(), Color.xoCyanBlue], startPoint: .topLeading, endPoint: .bottomTrailing) :
-                LinearGradient(colors: [Color.adaptiveOrange(), Color.xoOrangeRed], startPoint: .topLeading, endPoint: .bottomTrailing)
+            return winner == .x ? Color.adaptiveBlue().opacity(0.6) : Color.adaptiveOrange().opacity(0.6)
         }
     }
     
@@ -192,14 +174,15 @@ struct VictoryMessage: View {
     let isDraw: Bool
     let winner: Player?
     @State private var isAnimating = false
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     var body: some View {
         VStack(spacing: 12) {
             Text(mainTitle)
-                .font(.system(size: titleFontSize, weight: .black, design: .rounded))
-                .foregroundStyle(titleGradient)
-                .glow(color: titleGlowColor, radius: 15)
-                .scaleEffect(isAnimating ? 1.05 : 1.0)
+                .font(.system(size: titleFontSize, weight: .bold))
+                .foregroundColor(titleColor)
+                .scaleEffect(isAnimating ? 1.02 : 1.0)
                 .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: isAnimating)
                 .accessibilityLabel(mainTitle)
             
@@ -232,31 +215,57 @@ struct VictoryMessage: View {
         }
     }
     
-    private var titleFontSize: CGFloat {
-        let baseSize: CGFloat = 32
-        return baseSize
-    }
-    
-    private var subtitleFontSize: CGFloat {
-        let baseSize: CGFloat = 18
-        return baseSize
-    }
-    
-    private var titleGradient: LinearGradient {
-        if isDraw {
-            return LinearGradient.xoGoldGradient
-        } else {
-            return winner == .x ? 
-                LinearGradient(colors: [Color.adaptiveBlue(), Color.xoCyanBlue], startPoint: .leading, endPoint: .trailing) :
-                LinearGradient(colors: [Color.adaptiveOrange(), Color.xoOrangeRed], startPoint: .leading, endPoint: .trailing)
-        }
-    }
-    
-    private var titleGlowColor: Color {
+    private var titleColor: Color {
         if isDraw {
             return Color.xoGold
         } else {
             return winner == .x ? Color.adaptiveBlue() : Color.adaptiveOrange()
+        }
+    }
+    
+    private var titleFontSize: CGFloat {
+        let baseSize: CGFloat = horizontalSizeClass == .regular ? 28 : 24
+        
+        switch dynamicTypeSize {
+        case .xSmall, .small:
+            return baseSize
+        case .medium:
+            return baseSize * 0.95
+        case .large:
+            return baseSize * 0.9
+        case .xLarge:
+            return baseSize * 0.85
+        case .xxLarge:
+            return baseSize * 0.8
+        case .xxxLarge:
+            return baseSize * 0.75
+        case .accessibility1, .accessibility2, .accessibility3, .accessibility4, .accessibility5:
+            return baseSize * 0.7
+        @unknown default:
+            return baseSize * 0.95
+        }
+    }
+    
+    private var subtitleFontSize: CGFloat {
+        let baseSize: CGFloat = horizontalSizeClass == .regular ? 16 : 14
+        
+        switch dynamicTypeSize {
+        case .xSmall, .small:
+            return baseSize
+        case .medium:
+            return baseSize * 0.95
+        case .large:
+            return baseSize * 0.9
+        case .xLarge:
+            return baseSize * 0.85
+        case .xxLarge:
+            return baseSize * 0.8
+        case .xxxLarge:
+            return baseSize * 0.75
+        case .accessibility1, .accessibility2, .accessibility3, .accessibility4, .accessibility5:
+            return baseSize * 0.7
+        @unknown default:
+            return baseSize * 0.95
         }
     }
 }
@@ -270,11 +279,11 @@ struct GameStatsView: View {
     var body: some View {
         VStack(spacing: 16) {
             Text("GAME STATS")
-                .font(.system(size: 16, weight: .bold))
+                .font(.system(size: 14, weight: .bold))
                 .foregroundColor(.xoTextPrimary)
                 .accessibilityLabel("Game Statistics")
             
-            HStack(spacing: 24) {
+            HStack(spacing: 20) {
                 StatCard(
                     title: "X WINS",
                     value: "\(gameViewModel.xScore)",
@@ -282,27 +291,26 @@ struct GameStatsView: View {
                 )
                 
                 StatCard(
-                    title: "O WINS", 
-                    value: "\(gameViewModel.oScore)",
-                    color: Color.adaptiveOrange()
-                )
-                
-                StatCard(
                     title: "DRAWS",
                     value: "\(gameViewModel.draws)",
                     color: Color.xoGold
+                )
+                
+                StatCard(
+                    title: "O WINS", 
+                    value: "\(gameViewModel.oScore)",
+                    color: Color.adaptiveOrange()
                 )
             }
         }
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(LinearGradient.xoMetallicGradient)
+                .fill(Color.xoDarkerBackground.opacity(0.8))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.xoDarkMetallic, lineWidth: 2)
+                        .stroke(Color.xoDarkMetallic, lineWidth: 1)
                 )
-                .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
         )
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Game Statistics: X wins \(gameViewModel.xScore), O wins \(gameViewModel.oScore), Draws \(gameViewModel.draws)")
@@ -328,7 +336,6 @@ struct StatCard: View {
             Text(value)
                 .font(.system(size: valueFontSize, weight: .bold))
                 .foregroundColor(color)
-                .glow(color: color, radius: 5)
                 .minimumScaleFactor(0.8)
                 .lineLimit(1)
         }
@@ -380,80 +387,6 @@ struct StatCard: View {
         @unknown default:
             return baseSize * 0.95
         }
-    }
-}
-
-// MARK: - Victory Background
-
-struct VictoryBackground: View {
-    @State private var animationPhase: CGFloat = 0
-    
-    var body: some View {
-        ZStack {
-            // Base gradient
-            LinearGradient.xoBackgroundGradient
-                .ignoresSafeArea()
-            
-            // Animated celebration effects
-            GeometryReader { geometry in
-                ZStack {
-                    // Confetti particles
-                    ForEach(0..<30, id: \.self) { index in
-                        Circle()
-                            .fill(confettiColor(for: index))
-                            .frame(width: CGFloat.random(in: 4...12))
-                            .position(
-                                x: CGFloat.random(in: 0...geometry.size.width),
-                                y: CGFloat.random(in: 0...geometry.size.height)
-                            )
-                            .animation(
-                                Animation.easeInOut(duration: Double.random(in: 2...4))
-                                    .repeatForever(autoreverses: true)
-                                    .delay(Double.random(in: 0...1)),
-                                value: animationPhase
-                            )
-                    }
-                    
-                    // Victory light rays
-                    VStack {
-                        HStack(spacing: 40) {
-                            ForEach(0..<5) { index in
-                                Rectangle()
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [Color.xoGold.opacity(0.3), Color.clear],
-                                            startPoint: .top,
-                                            endPoint: .bottom
-                                        )
-                                    )
-                                    .frame(width: 2, height: 200)
-                                    .blur(radius: 2)
-                                    .offset(x: sin(animationPhase + Double(index)) * 10)
-                            }
-                        }
-                        Spacer()
-                    }
-                    .padding(.top, 50)
-                }
-            }
-        }
-        .onAppear {
-            withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
-                animationPhase = 1
-            }
-        }
-        .accessibilityHidden(true)
-    }
-    
-    private func confettiColor(for index: Int) -> Color {
-        let colors: [Color] = [
-            Color.xoGold,
-            Color.adaptiveBlue(),
-            Color.adaptiveOrange(),
-            Color.xoSuccess,
-            Color.xoVibrantBlue
-        ]
-        return colors[index % colors.count]
     }
 }
 

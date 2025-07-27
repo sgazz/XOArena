@@ -118,12 +118,13 @@ enum TimerDuration: Int, CaseIterable, Codable {
 
 /// Game settings
 struct GameSettings: Codable {
-    var aiDifficulty: AIDifficulty = .normal
-    var gameMode: GameMode = .classic
-    var timerDuration: TimerDuration = .threeMinutes
+    // Global settings only
     var soundEnabled: Bool = true
     var hapticEnabled: Bool = true
     var tutorialShown: Bool = false
+    var highContrastMode: Bool = false
+    var reduceMotion: Bool = false
+    var autoSaveEnabled: Bool = true
 }
 
 /// Game state
